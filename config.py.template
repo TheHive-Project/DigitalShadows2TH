@@ -1,0 +1,18 @@
+DigitalShadows = {
+    'proxies':{
+        'http': '',
+        'https': ''
+    },
+    'url':'',
+    'ds_key':'',
+    'ds_secret':'',
+    'verify':False,
+    'fulltext':'true'
+}
+
+TheHive = {
+    'url':'',
+    'username':'',
+    'password':''
+
+}
