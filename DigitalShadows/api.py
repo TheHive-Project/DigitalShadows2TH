@@ -31,13 +31,13 @@ class DigitalShadowsApi():
 
 
 	def getIncidents(self, id, fulltext='false'):
-		req = self.url + '/api/incidents/'+id+'?fulltext='+fulltext
+		req = self.url + '/api/incidents/{}?fulltext='.format(id)+fulltext
 		headers = self.headers
 		return self.session.get(req, headers=headers, auth=self.auth,
 								proxies=self.proxies, verify=False)
 
 	def getIntelIncidents(self, id, fulltext='false'):
-		req = self.url + '/api/intel-incidents/'+id+'?fulltext='+fulltext
+		req = self.url + '/api/intel-incidents/{}?fulltext='.format(id)+fulltext
 		headers = self.headers
 		return self.session.get(req, headers=headers, auth=self.auth,
 								proxies=self.proxies, verify=self.verify)
