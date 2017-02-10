@@ -116,6 +116,12 @@ def run(argv):
         elif opt in ('-i','--incident'):
             incidentId = arg
 
+    def import2th(response):
+        case = convertDs2Th(json.loads(response.content))
+        thresponse = thapi.create_case(case)
+        r = json.loads(thresponse.content)
+        # create task "Incident from DigitalShadows " with r['id']
+        # create log with all information in the incident
 
 
     dsapi = DigitalShadowsApi(DigitalShadows)
@@ -125,12 +131,12 @@ def run(argv):
 
     if(response.status_code == 200):
         case = convertDs2Th(json.loads(response.content))
-        thapi.create_case(case)
+        import2th(response)
 
     if(response.status_code == 404):
         response = dsapi.getIncidents(incidentId, fulltext='true')
-        case = convertDs2Th(json.loads(response.content))
-        thapi.create_case(case)
+        import2th(response)
+        
     else:
         print('ko: {}/{}'.format(response.status_code, response.text))
         sys.exit(0)
