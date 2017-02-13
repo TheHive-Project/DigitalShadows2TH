@@ -10,7 +10,7 @@ import json
 
 from DigitalShadows.api import DigitalShadowsApi
 from theHive4py.api import TheHiveApi
-from theHive4py.models import Case,CaseTask
+from theHive4py.models import Case,CaseTask,CaseTaskLog
 
 from config import DigitalShadows, TheHive
 
@@ -37,7 +37,7 @@ def DsCyberthreatDescription(content):
             "**verified:** " + content['verified'] + "\n\n" + \
             "**modified:** " + content['modified'] + "\n\n" + \
             "**identifier:** " + str(content['id']) + "\n\n" + \
-            content['summary']
+            "**Descrpition** \n\n" + content['description']
 
 
 def DsInfrastructureDescription(content):
@@ -54,17 +54,17 @@ def DsInfrastructureDescription(content):
             "**publiched:** " + content['published'] + "\n\n" + \
             "**modified:** " + content['modified'] + "\n\n" + \
             "**identifier:** " + str(content['id']) + "\n\n" + \
-            content['description'] + "\n\n" + \
-            "**impactDescription**: " + content['impactDescription'] + "\n\n" + \
-            "**mitigation**: " + content['mitigation']
+            "**Description** \n\n " + content['description'] + "\n\n\n" + \
+            "**impactDescription** \n\n " + content['impactDescription'] + "\n\n\n" + \
+            "**mitigation** \n\n " + content['mitigation']
 
 
 
 
-def convertDs2Th(content):
+def convertDs2ThCase(content):
 
     """
-        convert Digital Shadows incident in a TheHive Case and Tasks
+        convert Digital Shadows incident in a TheHive Case
 
         :content dict object
     """
@@ -74,25 +74,61 @@ def convertDs2Th(content):
     for tag in content['tags']:
         tags.append('DS:'+tag['type']+'='+tag['name'])
 
-    if content["type"] == "CYBER_THREAT":
         case = Case(
-                title=content['title'],
+                title="[DigitalShadows] #{} ".format(content['id']) + content['title'],
                 tlp=2,
                 severity=thSeverity(content['severity']),
                 flag=False,
                 tags=tags,
-                description=DsCyberthreatDescription(content) )
+                description = content['summary'])
 
+    return case
+
+
+def caseAddTask(thapi, caseId, content):
+
+    """
+        Add task in existing case with its log
+        Return the task "Imported from DigitalShadows" in the TheHive
+
+        : caseId       Id of the case created by the import program
+        : content      DigitalShadows response.content (JSON)
+    """
+    task = CaseTask(
+                title = "Incident imported from DigitalShadows",
+                description = content['summary']
+                )
+
+    if content["type"] == "CYBER_THREAT":
+        log = CaseTaskLog(
+                    message = DsCyberthreatDescription(content)
+        )
 
     if content["type"] == "INFRASTRUCTURE":
-        case = Case(
-                title=content['title'],
-                tlp=2,
-                severity=thSeverity(content['severity']),
-                flag=False,
-                tags=tags,
-                description=DsInfrastructureDescription(content) )
-    return case
+        log = CaseTaskLog(
+                    message = DsInfrastructureDescription(content)
+        )
+
+
+    thresponse = thapi.create_case_task(caseId, task)
+    r = json.loads(thresponse.content)
+    thresponse = thapi.create_task_log(r['id'],log)
+
+def import2th(thapi, response):
+
+    """
+        Convert DigitalShadows response and import it in TheHive
+        Call convertDs2ThCase
+        Call CaseAddTask
+        Return the case fully created in TheHive
+
+        :response   Response from DigitalShadows
+    """
+
+    case = convertDs2ThCase(json.loads(response.content))
+    thresponse = thapi.create_case(case)
+    r = json.loads(thresponse.content)
+    caseAddTask(thapi, r['id'], json.loads(response.content))
 
 
 def run(argv):
@@ -116,13 +152,6 @@ def run(argv):
         elif opt in ('-i','--incident'):
             incidentId = arg
 
-    def import2th(response):
-        case = convertDs2Th(json.loads(response.content))
-        thresponse = thapi.create_case(case)
-        r = json.loads(thresponse.content)
-        # create task "Incident from DigitalShadows " with r['id']
-        # create log with all information in the incident
-
 
     dsapi = DigitalShadowsApi(DigitalShadows)
     thapi = TheHiveApi(TheHive['url'],TheHive['username'],TheHive['password'])
@@ -130,13 +159,11 @@ def run(argv):
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
     if(response.status_code == 200):
-        case = convertDs2Th(json.loads(response.content))
-        import2th(response)
-
-    if(response.status_code == 404):
+        # case = convertDs2Th(json.loads(response.content))
+        import2th(thapi, response)
+    elif(response.status_code == 404):
         response = dsapi.getIncidents(incidentId, fulltext='true')
-        import2th(response)
-        
+        import2th(thapi, response)
     else:
         print('ko: {}/{}'.format(response.status_code, response.text))
         sys.exit(0)
