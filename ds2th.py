@@ -19,6 +19,8 @@ class DSDescription():
 
     def __init__(self, content):
 
+        self.source =""
+
         self.log =  "**Scope:** " + content['scope'] + "\n\n" + \
                     "**Type:** " + content['type'] + "\n\n" + \
                     "**Occurred:** " + content.get('occurred',"-") + "\n\n" + \
@@ -27,52 +29,99 @@ class DSDescription():
                     "**Publiched:** " + content.get('published',"-") + "\n\n" + \
                     "**Identifier:** " + str(content['id']) + "\n\n" + \
                     "**Tags:** " + self.tags(content) + "\n\n" + \
-                    "**Description** \n\n" + content['description'] + "\n\n" + \
+                    "#### Description ####  \n\n" + content['description'] + "\n\n" + \
+                    self.impactDescription(content) + "\n\n" + \
+                    self.mitigation(content) + "\n\n" + \
                     self.entitySummary(content)
 
 
     def entitySummary(self, content):
         if 'entitySummary' in content:
-            source ="----" + "\n\n" + \
-                    "**Source Information** \n\n" + \
-                    "**Source:** " + content['entitySummary']['source'] + "\n\n" + \
-                    "**Domain:** " + content['entitySummary']['domain'] + "\n\n" + \
-                    "**Date:** " + content['entitySummary']['sourceDate'] + "\n\n" + \
-                    "**Type:** " + content['entitySummary']['type'] + "\n\n"
-
-
+            c = content['entitySummary']
+            source = "----" + "\n\n" + \
+                    "#### Source Information #### \n\n" + \
+                    "**Source:** " + c['source'] + "\n\n" + \
+                    "**Domain:** " + c['domain'] + "\n\n" + \
+                    "**Date:** " + c['sourceDate'] + "\n\n" + \
+                    "**Type:** " + c['type'] + "\n\n" + \
+                    self.SummaryDataBreach(c)
 
             if 'summaryText' in content['entitySummary']:
                 summaryText = content['entitySummary']['summaryText']
                 source += "**Source data** \n\n" + \
-                        "> " + summaryText + "\n\n"
+                        "```\n" + summaryText + "\n```\n\n"
 
-            if 'dataBreach' in content['entitySummary']:
-                dataBreach = content['entitySummary']['dataBreach']
+
+        if 'IpAddressEntitySummary' in content:
+            c = content['IpAddressEntity']
+            source = "\n\n" + "----\n\n" + \
+                    "#### Source Information ####  \n\n" + \
+                    "**Source:** " + c['source'] + "\n\n" + \
+                    "**Domain:** " + c['domain'] + "\n\n" + \
+                    "**Date:** " + c['sourceDate'] + "\n\n" + \
+                    "**Type:** " + c['type'] + "\n\n" + \
+                    "**Summary:** " + c['summaryText'] + "\n\n" + \
+                    self.SummaryDataBreach(c)
+
+            if 'IpAddressDetails' in c:
+                details = c['IpAddressDetails']
                 source += "\n\n" + "----\n\n" + \
-                            "**Target** \n\n" + \
-                            "**Title: " + dataBreach['title'] + "**\n\n" + \
-                            "**Target domain:** " + dataBreach['domainName'] + "\n\n" + \
-                            "**Published:** " + dataBreach['published'] + "\n\n" + \
-                            "**Occured:** " + dataBreach['occured'] + "\n\n" + \
-                            "**Modified:** " + dataBreach['modified'] + "\n\n" + \
-                            "**Id:** " + dataBreach['id'] + "\n\n"
+                        "**IP address details** \n\n" + \
+                        "**IP:** " + details['ipAddress'] + "\n\n" + \
+                        "**AS:** " + details['autonomousSystemNumber'] + "\n\n" + \
+                        "**Reverse Domain Name:** " + details['reverseDomainName'] + "\n\n" + \
+                        "**Service Provider:** " + details['serviceProvider'] + "\n\n"
+                if 'location' in details:
+                    source += "**Geolocalication:** " + details['location']['country'] + \
+                                +"/"+ details['location']['city'] + "\n\n"
 
-            return source
+            if 'ports' in  c:
+                port = c['ports']
+                source += "\n\n" + "----\n\n" + \
+                        "**Port details** \n\n" + \
+                        "**Port:** " + port['portNumber'] + "/" + port['transport'] + "\n\n" + \
+                        "**Scanned on:** " + port['scannedOn'] + "\n\n" + \
+                        "**Device Type:** " + port['deviceType'] + "\n\n" + \
+                        "**Banner:** " + port['banner'] + "\n\n"
 
-        def IpAddressEntity(self,content):
-            if 'IpAddressEntity' in content:
-                source = "\n\n" + "----\n\n" + \
-                        "**Source Information** \n\n" + \
-                        "**Source:** " + content['IpAddressEntity']['source'] + "\n\n" + \
-                        "**Domain:** " + content['IpAddressEntity']['domain'] + "\n\n" + \
-                        "**Date:** " + content['IpAddressEntity']['sourceDate'] + "\n\n" + \
-                        "**Type:** " + content['IpAddressEntity']['type'] + "\n\n" + \
-                        "**Summary:** " + content['IpAddressEntity']['summaryText'] + "\n\n" + \
+            if 'vulnerability' in  c:
+                vuln = c['vulnerability']
+                source += "**vulnerability Information** \n\n" + \
+                        "**CVE ID:** " + vuln['specification']['specification']['cveId'] + "\n\n" + \
+                        "**CVE description:** " + vuln['specification']['specification']['description'] + "\n\n" + \
+                        "**Severity:** " + vuln['specification']['specification']['severity'] + "\n\n" + \
+                        "**Mitigation:** " + vuln['specification']['specification']['mitigation']+ "\n\n"
+
+        return source
+
+    def SummaryDataBreach(self, content):
+        if 'dataBreach' in content:
+            print("ok")
+            dataBreach = content['entitySummary']['dataBreach']
+            source = "**Databreach target** \n\n" + \
+                        "**Title: " + dataBreach['title'] + "**\n\n" + \
+                        "**Target domain:** " + dataBreach['domainName'] + "\n\n" + \
+                        "**Published:** " + dataBreach['published'] + "\n\n" + \
+                        "**Occured:** " + dataBreach['occured'] + "\n\n" + \
+                        "**Modified:** " + dataBreach['modified'] + "\n\n" + \
+                        "**Id:** " + dataBreach['id'] + "\n\n"
+        source = ""
+        return source
 
 
-            return source
+    def impactDescription(self, content):
+        impact = ""
+        if "impactDescription" in content:
+            impact = "\n\n#### Impact Description #### \n\n" + \
+                    content.get('impactDescription', "-")
+        return impact
 
+    def mitigation(self, content):
+        mitigation = ""
+        if "mitigation" in content:
+            mitigation = "\n\n#### Mitifation #### \n\n" + \
+                    content.get('mitigation', "-")
+        return mitigation
 
 
     def lci(self, content):
@@ -95,8 +144,12 @@ class DSDescription():
         return t
 
 
+
+
+
 def thSeverity(sev):
     severities = {
+        'NONE':1,
         'LOW':1,
         'MEDIUM':2,
         'HIGH':3
@@ -118,7 +171,7 @@ def convertDs2ThCase(content):
     for tag in content['tags']:
         tags.append('DS:'+tag['type']+'='+tag['name'])
 
-        if 'summary' in content:
+        if ('summary' in content) and (len(content['summary']) > 1):
             description = content.get('summary')
         else:
             description = content.get('description', {})
@@ -147,18 +200,19 @@ def caseAddTask(thapi, caseId, content):
                 )
     print("task created \n")
 
-    if content["type"] == "CYBER_THREAT":
-        m = DSDescription(content).log
-        log = CaseTaskLog(message = m)
+    # if content["type"] == "CYBER_THREAT":
+    #     m = DSDescription(content).log
+    #     log = CaseTaskLog(message = m)
 
 
 
-    if content["type"] == "INFRASTRUCTURE":
-        m = DSDescription(content).log
-        print(m)
-        log = CaseTaskLog(message = m)
+    # if content["type"] == "INFRASTRUCTURE":
+    #     m = DSDescription(content).log
+    #     print(m)
+        # log = CaseTaskLog(message = m)
 
-
+    m = DSDescription(content).log
+    log = CaseTaskLog(message = m)
     thresponse = thapi.create_case_task(caseId, task)
     r = json.loads(thresponse.content)
     thresponse = thapi.create_task_log(r['id'], log)
@@ -175,7 +229,9 @@ def import2th(thapi, response):
     """
 
     case = convertDs2ThCase(json.loads(response.content))
+    print(case.jsonify())
     thresponse = thapi.create_case(case)
+    print(thresponse)
     r = json.loads(thresponse.content)
     caseAddTask(thapi, r['id'], json.loads(response.content))
 
