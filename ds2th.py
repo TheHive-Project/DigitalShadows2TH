@@ -15,6 +15,86 @@ from theHive4py.models import Case,CaseTask,CaseTaskLog
 from config import DigitalShadows, TheHive
 
 
+class DSDescription():
+
+    def __init__(self, content):
+
+        self.log =  "**Scope:** " + content['scope'] + "\n\n" + \
+                    "**Type:** " + content['type'] + "\n\n" + \
+                    "**Occurred:** " + content.get('occurred',"-") + "\n\n" + \
+                    "**Verified:** " + content.get('verified',"-") + "\n\n" + \
+                    "**Modified:** " + content.get('modified',"-") + "\n\n" + \
+                    "**Publiched:** " + content.get('published',"-") + "\n\n" + \
+                    "**Identifier:** " + str(content['id']) + "\n\n" + \
+                    "**Tags:** " + self.tags(content) + "\n\n" + \
+                    "**Description** \n\n" + content['description'] + "\n\n" + \
+                    self.entitySummary(content)
+
+
+    def entitySummary(self, content):
+        if 'entitySummary' in content:
+            source ="----" + "\n\n" + \
+                    "**Source Information** \n\n" + \
+                    "**Source:** " + content['entitySummary']['source'] + "\n\n" + \
+                    "**Domain:** " + content['entitySummary']['domain'] + "\n\n" + \
+                    "**Date:** " + content['entitySummary']['sourceDate'] + "\n\n" + \
+                    "**Type:** " + content['entitySummary']['type'] + "\n\n"
+
+
+
+            if 'summaryText' in content['entitySummary']:
+                summaryText = content['entitySummary']['summaryText']
+                source += "**Source data** \n\n" + \
+                        "> " + summaryText + "\n\n"
+
+            if 'dataBreach' in content['entitySummary']:
+                dataBreach = content['entitySummary']['dataBreach']
+                source += "\n\n" + "----\n\n" + \
+                            "**Target** \n\n" + \
+                            "**Title: " + dataBreach['title'] + "**\n\n" + \
+                            "**Target domain:** " + dataBreach['domainName'] + "\n\n" + \
+                            "**Published:** " + dataBreach['published'] + "\n\n" + \
+                            "**Occured:** " + dataBreach['occured'] + "\n\n" + \
+                            "**Modified:** " + dataBreach['modified'] + "\n\n" + \
+                            "**Id:** " + dataBreach['id'] + "\n\n"
+
+            return source
+
+        def IpAddressEntity(self,content):
+            if 'IpAddressEntity' in content:
+                source = "\n\n" + "----\n\n" + \
+                        "**Source Information** \n\n" + \
+                        "**Source:** " + content['IpAddressEntity']['source'] + "\n\n" + \
+                        "**Domain:** " + content['IpAddressEntity']['domain'] + "\n\n" + \
+                        "**Date:** " + content['IpAddressEntity']['sourceDate'] + "\n\n" + \
+                        "**Type:** " + content['IpAddressEntity']['type'] + "\n\n" + \
+                        "**Summary:** " + content['IpAddressEntity']['summaryText'] + "\n\n" + \
+
+
+            return source
+
+
+
+    def lci(self, content):
+        if content["linkedContentIncidents"] not in []:
+            linkedContentIncidents = ""
+            for lci in content["linkedContentIncidents"]:
+                linkedContentIncidents += "- {} \n\n".format(lci)
+        else:
+            linkedContentIncidents = "-"
+        return linkedContentIncidents
+
+
+    def tags(self, content):
+        if 'tags' in content:
+            t = ""
+            for tag in content['tags']:
+                t += "_{}_, ".format(tag['name'])
+        else:
+            t += "-"
+        return t
+
+
 def thSeverity(sev):
     severities = {
         'LOW':1,
@@ -22,42 +102,6 @@ def thSeverity(sev):
         'HIGH':3
     }
     return severities[sev]
-
-def DsCyberthreatDescription(content):
-    """
-        Build TheHive Case description from DS Incident
-        of type CYBER-THREAT
-
-        :content dict object
-    """
-
-    return "**scope:** " + content['scope'] + "\n\n" + \
-            "**type:** " + content['type'] + "\n\n" + \
-            "**occurred:** " + content['occurred'] + "\n\n" + \
-            "**verified:** " + content['verified'] + "\n\n" + \
-            "**modified:** " + content['modified'] + "\n\n" + \
-            "**identifier:** " + str(content['id']) + "\n\n" + \
-            "**Descrpition** \n\n" + content['description']
-
-
-def DsInfrastructureDescription(content):
-    """
-        Build TheHive Case description from DS Incident
-        of type CYBER-THREAT
-
-        :content dict object
-    """
-    return "**scope:** " + content['scope'] + "\n\n" + \
-            "**type:** " + content['type'] + "\n\n" + \
-            "**occurred:** " + content['occurred'] + "\n\n" + \
-            "**verified:** " + content['verified'] + "\n\n" + \
-            "**publiched:** " + content['published'] + "\n\n" + \
-            "**modified:** " + content['modified'] + "\n\n" + \
-            "**identifier:** " + str(content['id']) + "\n\n" + \
-            "**Description** \n\n " + content['description'] + "\n\n\n" + \
-            "**impactDescription** \n\n " + content['impactDescription'] + "\n\n\n" + \
-            "**mitigation** \n\n " + content['mitigation']
-
 
 
 
@@ -74,14 +118,17 @@ def convertDs2ThCase(content):
     for tag in content['tags']:
         tags.append('DS:'+tag['type']+'='+tag['name'])
 
+        if 'summary' in content:
+            description = content.get('summary')
+        else:
+            description = content.get('description', {})
         case = Case(
                 title="[DigitalShadows] #{} ".format(content['id']) + content['title'],
                 tlp=2,
                 severity=thSeverity(content['severity']),
                 flag=False,
                 tags=tags,
-                description = content['summary'])
-
+                description = description)
     return case
 
 
@@ -96,23 +143,25 @@ def caseAddTask(thapi, caseId, content):
     """
     task = CaseTask(
                 title = "Incident imported from DigitalShadows",
-                description = content['summary']
+                description = "Incident from DigitalShadows"
                 )
+    print("task created \n")
 
     if content["type"] == "CYBER_THREAT":
-        log = CaseTaskLog(
-                    message = DsCyberthreatDescription(content)
-        )
+        m = DSDescription(content).log
+        log = CaseTaskLog(message = m)
+
+
 
     if content["type"] == "INFRASTRUCTURE":
-        log = CaseTaskLog(
-                    message = DsInfrastructureDescription(content)
-        )
+        m = DSDescription(content).log
+        print(m)
+        log = CaseTaskLog(message = m)
 
 
     thresponse = thapi.create_case_task(caseId, task)
     r = json.loads(thresponse.content)
-    thresponse = thapi.create_task_log(r['id'],log)
+    thresponse = thapi.create_task_log(r['id'], log)
 
 def import2th(thapi, response):
 
