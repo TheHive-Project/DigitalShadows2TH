@@ -119,7 +119,6 @@ def run(argv):
         elif opt in ('-i','--incident'):
             incidentId = arg
 
-
     dsapi = DigitalShadowsApi(DigitalShadows)
     thapi = TheHiveApi(TheHive['url'],TheHive['username'],TheHive['password'])
 
