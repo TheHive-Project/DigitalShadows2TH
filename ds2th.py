@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import sys
 import getopt
 import json
+import getpass
 
 from DigitalShadows.api import DigitalShadowsApi
 from theHive4py.api import TheHiveApi
@@ -120,6 +121,11 @@ def run(argv):
             incidentId = arg
 
     dsapi = DigitalShadowsApi(DigitalShadows)
+
+    if not TheHive['username'] and not TheHive['password']:
+        TheHive['username'] = input("TheHive Username [%s]: " % getpass.getuser())
+        TheHive['password'] = getpass.getpass("TheHive Password: ")
+
     thapi = TheHiveApi(TheHive['url'],TheHive['username'],TheHive['password'])
 
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
