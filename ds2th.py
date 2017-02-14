@@ -37,32 +37,20 @@ class DSDescription():
 
 
     def entitySummary(self, content):
+        source = ""
         if 'entitySummary' in content:
             c = content['entitySummary']
-            source = "----" + "\n\n" + \
-                    "#### Source Information #### \n\n" + \
-                    "**Source:** " + c['source'] + "\n\n" + \
-                    "**Domain:** " + c['domain'] + "\n\n" + \
-                    "**Date:** " + c['sourceDate'] + "\n\n" + \
-                    "**Type:** " + c['type'] + "\n\n" + \
-                    self.SummaryDataBreach(c)
+            source += self.Summary(c)
 
-            if 'summaryText' in content['entitySummary']:
-                summaryText = content['entitySummary']['summaryText']
+            if 'summaryText' in c:
+                summaryText = c['summaryText']
                 source += "#### Source data #### \n\n" + \
                         "```\n" + summaryText + "\n```\n\n"
 
 
         if 'IpAddressEntitySummary' in content:
             c = content['IpAddressEntity']
-            source = "\n\n" + "----\n\n" + \
-                    "#### Source Information ####  \n\n" + \
-                    "**Source:** " + c['source'] + "\n\n" + \
-                    "**Domain:** " + c['domain'] + "\n\n" + \
-                    "**Date:** " + c['sourceDate'] + "\n\n" + \
-                    "**Type:** " + c['type'] + "\n\n" + \
-                    "**Summary:** " + c['summaryText'] + "\n\n" + \
-                    self.SummaryDataBreach(c)
+            source = self.Summary(c)
 
             if 'IpAddressDetails' in c:
                 details = c['IpAddressDetails']
@@ -93,20 +81,45 @@ class DSDescription():
                         "**Severity:** " + vuln['specification']['specification']['severity'] + "\n\n" + \
                         "**Mitigation:** " + vuln['specification']['specification']['mitigation']+ "\n\n"
 
+        if 'MessageEntitySummary' in content:
+            c = content['MessageEntitySummary']
+            source += self.Summary(c)
+
+            if 'conversationFragment' in c:
+                conv = c['conversationFragment']
+                source += "#### Conversation Information #### \n\n" + \
+                        "**Server:** " + conv['server'] + "\n\n" + \
+                        "**Channel:** " + conv['channel'] + "\n\n"
+                if "Message" in conv:
+                    msg = conv["Message"]
+                    source += "**Message**\n\n" + \
+                            "**User:** " + "\"{0}\" - {1}\n\n".format(msg['nickname'],msg['username']) + \
+                            "**Sent:** " + msg['sent'] + "\n\n"  + \
+                            "**Message**\n\n" + \
+                            "```\n\n" + msg['content'] + "\n\n```"
+
         return source
 
-    def SummaryDataBreach(self, content):
+
+    def Summary(self, content):
+        source = ""
+        source += "----\n\n" + \
+                "#### Source Information #### \n\n" + \
+                "**Source:** " + content['source'] + "\n\n" + \
+                "**Domain:** " + content['domain'] + "\n\n" + \
+                "**Date:** " + content['sourceDate'] + "\n\n" + \
+                "**Type:** " + content['type'] + "\n\n"
+
         if 'dataBreach' in content:
             print("ok")
             dataBreach = content['entitySummary']['dataBreach']
-            source = "**Databreach target** \n\n" + \
+            source += "**Databreach target** \n\n" + \
                         "**Title: " + dataBreach['title'] + "**\n\n" + \
                         "**Target domain:** " + dataBreach['domainName'] + "\n\n" + \
                         "**Published:** " + dataBreach['published'] + "\n\n" + \
                         "**Occured:** " + dataBreach['occured'] + "\n\n" + \
                         "**Modified:** " + dataBreach['modified'] + "\n\n" + \
                         "**Id:** " + dataBreach['id'] + "\n\n"
-        source = ""
         return source
 
 
@@ -175,7 +188,7 @@ def convertDs2ThCase(content):
         if ('summary' in content) and (len(content['summary']) > 1):
             description = content.get('summary')
         else:
-            description = content.get('description', {})
+            description = content.get('description', {"-"})
         case = Case(
                 title="[DigitalShadows] #{} ".format(content['id']) + content['title'],
                 tlp=2,
@@ -199,18 +212,6 @@ def caseAddTask(thapi, caseId, content):
                 title = "Incident imported from DigitalShadows",
                 description = "Incident from DigitalShadows"
                 )
-    print("task created \n")
-
-    # if content["type"] == "CYBER_THREAT":
-    #     m = DSDescription(content).log
-    #     log = CaseTaskLog(message = m)
-
-
-
-    # if content["type"] == "INFRASTRUCTURE":
-    #     m = DSDescription(content).log
-    #     print(m)
-        # log = CaseTaskLog(message = m)
 
     m = DSDescription(content).log
     log = CaseTaskLog(message = m)
@@ -230,9 +231,7 @@ def import2th(thapi, response):
     """
 
     case = convertDs2ThCase(json.loads(response.content))
-    print(case.jsonify())
     thresponse = thapi.create_case(case)
-    print(thresponse)
     r = json.loads(thresponse.content)
     caseAddTask(thapi, r['id'], json.loads(response.content))
 
@@ -265,7 +264,6 @@ def run(argv):
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
     if(response.status_code == 200):
-        # case = convertDs2Th(json.loads(response.content))
         import2th(thapi, response)
     elif(response.status_code == 404):
         response = dsapi.getIncidents(incidentId, fulltext='true')
