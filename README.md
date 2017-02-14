@@ -8,7 +8,7 @@ Import DigitalShadows incident to TheHive
 
 ## Prerequisite
 
-Fill  `config.py` with all connection information to connect to DigitalShadows API and TheHive API.
+Copy `config.py.template` into `config.py` and fill all connection information needed to connect to DigitalShadows API and TheHive API.
 
 ## Usage
 
