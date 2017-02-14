@@ -27,6 +27,7 @@ def thSeverity(sev):
 
     severities = {
         'NONE':1,
+        'VERY_LOW':1,
         'LOW':1,
         'MEDIUM':2,
         'HIGH':3
@@ -48,17 +49,18 @@ def convertDs2ThCase(content):
     for tag in content['tags']:
         tags.append('DS:'+tag['type']+'='+tag['name'])
 
-        if ('summary' in content) and (len(content['summary']) > 1):
-            description = content.get('summary')
-        else:
-            description = content.get('description', {"-"})
-        case = Case(
-                title="[DigitalShadows] #{} ".format(content['id']) + content['title'],
-                tlp=2,
-                severity=thSeverity(content['severity']),
-                flag=False,
-                tags=tags,
-                description = description)
+
+    if ('summary' in content) and (len(content['summary']) > 1):
+        description = content.get('summary')
+    else:
+        description = content.get('description', {"-"})
+    case = Case(
+            title="[DigitalShadows] #{} ".format(content['id']) + content['title'],
+            tlp=2,
+            severity=thSeverity(content['severity']),
+            flag=False,
+            tags=tags,
+            description = description)
     return case
 
 
@@ -134,7 +136,11 @@ def run(argv):
         import2th(thapi, response)
     elif(response.status_code == 404):
         response = dsapi.getIncidents(incidentId, fulltext='true')
-        import2th(thapi, response)
+        if (response.status_code == 200):
+            import2th(thapi, response)
+        else:
+            print('ko: {}/{}'.format(response.status_code, response.text))
+            sys.exit(0)
     else:
         print('ko: {}/{}'.format(response.status_code, response.text))
         sys.exit(0)
