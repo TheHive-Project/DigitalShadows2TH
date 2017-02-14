@@ -92,13 +92,13 @@ def import2th(thapi, response):
         Call CaseAddTask
         Return the case fully created in TheHive
 
-        :response   Response from DigitalShadows
+        :response  dict Response from DigitalShadows
     """
 
-    case = convertDs2ThCase(json.loads(response.content))
+    case = convertDs2ThCase(response)
     thresponse = thapi.create_case(case)
     r = json.loads(thresponse.content)
-    caseAddTask(thapi, r['id'], json.loads(response.content))
+    caseAddTask(thapi, r['id'], response)
 
 
 def run(argv):
@@ -133,11 +133,11 @@ def run(argv):
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
     if(response.status_code == 200):
-        import2th(thapi, response)
+        import2th(thapi, response.json())
     elif(response.status_code == 404):
         response = dsapi.getIncidents(incidentId, fulltext='true')
         if (response.status_code == 200):
-            import2th(thapi, response)
+            import2th(thapi, response.json())
         else:
             print('ko: {}/{}'.format(response.status_code, response.text))
             sys.exit(0)
