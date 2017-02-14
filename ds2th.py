@@ -29,6 +29,7 @@ class DSDescription():
                     "**Publiched:** " + content.get('published',"-") + "\n\n" + \
                     "**Identifier:** " + str(content['id']) + "\n\n" + \
                     "**Tags:** " + self.tags(content) + "\n\n" + \
+                    "----\n\n" + \
                     "#### Description ####  \n\n" + content['description'] + "\n\n" + \
                     self.impactDescription(content) + "\n\n" + \
                     self.mitigation(content) + "\n\n" + \
@@ -48,7 +49,7 @@ class DSDescription():
 
             if 'summaryText' in content['entitySummary']:
                 summaryText = content['entitySummary']['summaryText']
-                source += "**Source data** \n\n" + \
+                source += "#### Source data #### \n\n" + \
                         "```\n" + summaryText + "\n```\n\n"
 
 
@@ -66,7 +67,7 @@ class DSDescription():
             if 'IpAddressDetails' in c:
                 details = c['IpAddressDetails']
                 source += "\n\n" + "----\n\n" + \
-                        "**IP address details** \n\n" + \
+                        "#### IP address details #### \n\n" + \
                         "**IP:** " + details['ipAddress'] + "\n\n" + \
                         "**AS:** " + details['autonomousSystemNumber'] + "\n\n" + \
                         "**Reverse Domain Name:** " + details['reverseDomainName'] + "\n\n" + \
@@ -78,7 +79,7 @@ class DSDescription():
             if 'ports' in  c:
                 port = c['ports']
                 source += "\n\n" + "----\n\n" + \
-                        "**Port details** \n\n" + \
+                        " #### Port details #### \n\n" + \
                         "**Port:** " + port['portNumber'] + "/" + port['transport'] + "\n\n" + \
                         "**Scanned on:** " + port['scannedOn'] + "\n\n" + \
                         "**Device Type:** " + port['deviceType'] + "\n\n" + \
@@ -86,7 +87,7 @@ class DSDescription():
 
             if 'vulnerability' in  c:
                 vuln = c['vulnerability']
-                source += "**vulnerability Information** \n\n" + \
+                source += "#### vulnerability Information ####  \n\n" + \
                         "**CVE ID:** " + vuln['specification']['specification']['cveId'] + "\n\n" + \
                         "**CVE description:** " + vuln['specification']['specification']['description'] + "\n\n" + \
                         "**Severity:** " + vuln['specification']['specification']['severity'] + "\n\n" + \
@@ -119,7 +120,7 @@ class DSDescription():
     def mitigation(self, content):
         mitigation = ""
         if "mitigation" in content:
-            mitigation = "\n\n#### Mitifation #### \n\n" + \
+            mitigation = "\n\n#### Mitigation #### \n\n" + \
                     content.get('mitigation', "-")
         return mitigation
 
