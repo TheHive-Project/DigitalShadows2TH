@@ -81,7 +81,7 @@ def caseAddTask(thapi, caseId, content):
     m = ds2markdown(content).report
     log = CaseTaskLog(message = m)
     thresponse = thapi.create_case_task(caseId, task)
-    r = json.loads(thresponse.content)
+    r = thresponse.json()
     thresponse = thapi.create_task_log(r['id'], log)
 
 def import2th(thapi, response):
@@ -97,7 +97,8 @@ def import2th(thapi, response):
 
     case = convertDs2ThCase(response)
     thresponse = thapi.create_case(case)
-    r = json.loads(thresponse.content)
+    r = thresponse.json()
+    print(r)
     caseAddTask(thapi, r['id'], response)
 
 
