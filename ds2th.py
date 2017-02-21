@@ -129,7 +129,8 @@ def run(argv):
         TheHive['username'] = input("TheHive Username [%s]: " % getpass.getuser())
         TheHive['password'] = getpass.getpass("TheHive Password: ")
 
-    thapi = TheHiveApi(TheHive['url'],TheHive['username'],TheHive['password'])
+    thapi = TheHiveApi(TheHive['url'],TheHive['username'],
+                        TheHive['password'], TheHive['proxies'])
 
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 

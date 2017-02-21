@@ -11,6 +11,10 @@ DigitalShadows = {
 }
 
 TheHive = {
+  'proxies':{
+      'http': '',
+      'https': ''
+  },
     'url':'',
     'username':'',
     'password':''
