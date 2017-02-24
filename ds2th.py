@@ -110,6 +110,8 @@ def run(argv):
         :argv incident number
     """
 
+
+    # get options
     incidentId = ''
     try:
         opts, args = getopt.getopt(argv, 'hi:',["incident="])
@@ -123,8 +125,8 @@ def run(argv):
         elif opt in ('-i','--incident'):
             incidentId = arg
 
-    dsapi = DigitalShadowsApi(DigitalShadows)
 
+    # get username and password for TheHive
     if not TheHive['username'] and not TheHive['password']:
         TheHive['username'] = input("TheHive Username [%s]: " % getpass.getuser())
         TheHive['password'] = getpass.getpass("TheHive Password: ")
@@ -132,6 +134,9 @@ def run(argv):
     thapi = TheHiveApi(TheHive['url'],TheHive['username'],
                         TheHive['password'], TheHive['proxies'])
 
+
+    # Create DigitalShadows session and get incident
+    dsapi = DigitalShadowsApi(DigitalShadows)
     response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
     if(response.status_code == 200):
