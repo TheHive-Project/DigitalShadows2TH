@@ -10,11 +10,11 @@ import json
 import getpass
 
 from DigitalShadows.api import DigitalShadowsApi
-from theHive4py.api import TheHiveApi
-from theHive4py.models import Case,CaseTask,CaseTaskLog
+from thehive4py.api import TheHiveApi
+from thehive4py.models import Case,CaseTask,CaseTaskLog
 
 from config import DigitalShadows, TheHive
-from DigitalShadows.ds2markdown import ds2markdown
+from ds2markdown import ds2markdown
 
 
 def thSeverity(sev):
@@ -78,7 +78,8 @@ def caseAddTask(thapi, caseId, content):
                 description = "Incident from DigitalShadows"
                 )
 
-    m = ds2markdown(content).report
+    m = ds2markdown(content).taskLog
+    print(m)
     log = CaseTaskLog(message = m)
     thresponse = thapi.create_case_task(caseId, task)
     r = thresponse.json()
@@ -98,7 +99,6 @@ def import2th(thapi, response):
     case = convertDs2ThCase(response)
     thresponse = thapi.create_case(case)
     r = thresponse.json()
-    print(r)
     caseAddTask(thapi, r['id'], response)
 
 
