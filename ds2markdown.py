@@ -10,7 +10,6 @@ class ds2markdown():
     def __init__(self, content):
 
         self.source =""
-
         self.taskLog = "{0} {1} {2} {3}".format(
             "**Scope:**: {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
                     content.get('scope',"None"),
@@ -21,7 +20,7 @@ class ds2markdown():
                     content.get('published',"None"),
                     str(content.get('id',"None")),
                     self.tags(content)
-            ),"----\n\n#### Description ####  \n\n{}\n\n".format(content.get('decription')),
+            ),"----\n\n#### Description ####  \n\n{}\n\n".format(content.get('description')),
             "{}\n\n".format(self.impactDescription(content)),
             "{}\n\n".format(self.mitigation(content)),
             "{}\n\n".format(self.entitySummary(content))
