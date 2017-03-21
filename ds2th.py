@@ -79,7 +79,6 @@ def caseAddTask(thapi, caseId, content):
                 )
 
     m = ds2markdown(content).taskLog
-    print(m)
     log = CaseTaskLog(message = m)
     thresponse = thapi.create_case_task(caseId, task)
     r = thresponse.json()
