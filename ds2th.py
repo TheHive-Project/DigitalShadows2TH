@@ -8,13 +8,14 @@ import sys
 import getopt
 import json
 import getpass
+import re
 
 from DigitalShadows.api import DigitalShadowsApi
-from theHive4py.api import TheHiveApi
-from theHive4py.models import Case,CaseTask,CaseTaskLog
+from thehive4py.api import TheHiveApi
+from thehive4py.models import Case,CaseTask,CaseTaskLog
 
 from config import DigitalShadows, TheHive
-from DigitalShadows.ds2markdown import ds2markdown
+from ds2markdown import ds2markdown
 
 
 def thSeverity(sev):
@@ -78,7 +79,7 @@ def caseAddTask(thapi, caseId, content):
                 description = "Incident from DigitalShadows"
                 )
 
-    m = ds2markdown(content).report
+    m = ds2markdown(content).taskLog
     log = CaseTaskLog(message = m)
     thresponse = thapi.create_case_task(caseId, task)
     r = thresponse.json()
@@ -98,7 +99,6 @@ def import2th(thapi, response):
     case = convertDs2ThCase(response)
     thresponse = thapi.create_case(case)
     r = thresponse.json()
-    print(r)
     caseAddTask(thapi, r['id'], response)
 
 
@@ -136,21 +136,40 @@ def run(argv):
 
 
     # Create DigitalShadows session and get incident
-    dsapi = DigitalShadowsApi(DigitalShadows)
-    response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
-    if(response.status_code == 200):
-        import2th(thapi, response.json())
-    elif(response.status_code == 404):
-        response = dsapi.getIncidents(incidentId, fulltext='true')
+    dsapi = DigitalShadowsApi(DigitalShadows)
+    # response = dsapi.getIntelIncidents(incidentId, fulltext='true')
+    #
+    # if(response.status_code == 200):
+    #     import2th(thapi, response.json())
+    # elif(response.status_code == 404):
+    #     response = dsapi.getIncidents(incidentId, fulltext='true')
+    #     if (response.status_code == 200):
+    #         import2th(thapi, response.json())
+    #     else:
+    #         print('ko: {}/{}'.format(response.status_code, response.text))
+    #         sys.exit(0)
+    # else:
+    #     print('ko: {}/{}'.format(response.status_code, response.text))
+    #     sys.exit(0)
+
+
+    r = re.compile('S.*')
+    if r.match(incidentId):
+        i = incidentId[1:]
+        response = dsapi.getIntelIncidents(i, fulltext='true')
         if (response.status_code == 200):
             import2th(thapi, response.json())
         else:
             print('ko: {}/{}'.format(response.status_code, response.text))
             sys.exit(0)
     else:
-        print('ko: {}/{}'.format(response.status_code, response.text))
-        sys.exit(0)
+        response = dsapi.getIncidents(incidentId)
+        if(response.status_code == 200):
+            import2th(thapi, response.json())
+        else:
+            print('ko: {}/{}'.format(response.status_code, response.text))
+            sys.exit(0)
 
 
 
