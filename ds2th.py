@@ -8,6 +8,7 @@ import sys
 import getopt
 import json
 import getpass
+import re
 
 from DigitalShadows.api import DigitalShadowsApi
 from thehive4py.api import TheHiveApi
@@ -135,21 +136,40 @@ def run(argv):
 
 
     # Create DigitalShadows session and get incident
-    dsapi = DigitalShadowsApi(DigitalShadows)
-    response = dsapi.getIntelIncidents(incidentId, fulltext='true')
 
-    if(response.status_code == 200):
-        import2th(thapi, response.json())
-    elif(response.status_code == 404):
-        response = dsapi.getIncidents(incidentId, fulltext='true')
+    dsapi = DigitalShadowsApi(DigitalShadows)
+    # response = dsapi.getIntelIncidents(incidentId, fulltext='true')
+    #
+    # if(response.status_code == 200):
+    #     import2th(thapi, response.json())
+    # elif(response.status_code == 404):
+    #     response = dsapi.getIncidents(incidentId, fulltext='true')
+    #     if (response.status_code == 200):
+    #         import2th(thapi, response.json())
+    #     else:
+    #         print('ko: {}/{}'.format(response.status_code, response.text))
+    #         sys.exit(0)
+    # else:
+    #     print('ko: {}/{}'.format(response.status_code, response.text))
+    #     sys.exit(0)
+
+
+    r = re.compile('S.*')
+    if r.match(incidentId):
+        i = incidentId[1:]
+        response = dsapi.getIntelIncidents(i, fulltext='true')
         if (response.status_code == 200):
             import2th(thapi, response.json())
         else:
             print('ko: {}/{}'.format(response.status_code, response.text))
             sys.exit(0)
     else:
-        print('ko: {}/{}'.format(response.status_code, response.text))
-        sys.exit(0)
+        response = dsapi.getIncidents(incidentId)
+        if(response.status_code == 200):
+            import2th(thapi, response.json())
+        else:
+            print('ko: {}/{}'.format(response.status_code, response.text))
+            sys.exit(0)
 
 
 

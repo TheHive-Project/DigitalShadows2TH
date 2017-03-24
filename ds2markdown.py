@@ -10,7 +10,7 @@ class ds2markdown():
     def __init__(self, content):
 
         self.source =""
-        self.taskLog = "{0} {1} {2} {3}".format(
+        self.taskLog = "{0} {1} {2} {3} {4}".format(
             "**Scope:**: {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
                     content.get('scope',"None"),
                     content.get('type',"None"),
@@ -39,7 +39,6 @@ class ds2markdown():
                 summaryText = c.get('summaryText',"None")
                 source += "#### Source data #### \n\n" + \
                         "```\n{}\n```\n\n".format(summaryText)
-
 
         if 'IpAddressEntitySummary' in content:
             c = content.get('IpAddressEntity',"None")
@@ -126,6 +125,11 @@ class ds2markdown():
                                 dataBreach.get('modified',"None"),
                                 dataBreach.get('id', "None")
                         )
+
+        if 'secureSocketInspection' in content:
+            source += "**Technical information** \n\n ```\n\n{}\n\n```".format( json.dumps(content.get('secureSocketInspection'),  indent=4))
+
+
         return source
 
 
