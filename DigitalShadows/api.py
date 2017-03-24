@@ -29,7 +29,7 @@ class DigitalShadowsApi():
                                                 password=self.secret)
 
     def getIncidents(self, id, fulltext='false'):
-        req = self.url + '/api/incidents/{}?fulltext='.format(id) + fulltext
+        req = self.url + '/api/incidents/{}'.format(id)
         headers = self.headers
         try:
             return self.session.get(req, headers=headers, auth=self.auth,
