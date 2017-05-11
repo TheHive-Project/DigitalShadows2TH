@@ -115,9 +115,9 @@ class ds2markdown():
                 )
 
         if 'dataBreach' in content:
-            dataBreach = content.get('entitySummary').get('dataBreach')
-            source += "**Databreach target** \n\n" + \
-                        "**Title: {0}\n\n**Target domain:** {1}\n\n**Published:** {2}\n\n**Occured:** {3}\n\n**Modified:** {4}\n\n**Id:** {5}\n\n".format(
+            dataBreach = content.get('dataBreach')
+            source += "\n\n#### Databreach target ####  \n\n" + \
+                        "**Title:** {0}\n\n**Target domain:** {1}\n\n**Published:** {2}\n\n**Occured:** {3}\n\n**Modified:** {4}\n\n**Id:** {5}\n\n".format(
                                 dataBreach.get('title',"None"),
                                 dataBreach.get('domainName',"None"),
                                 dataBreach.get('published',"None"),
