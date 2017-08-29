@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
+import os
 import sys
 import getopt
 import getpass
 import datetime
 from io import BytesIO
 import base64
+import logging
+
 
 from DigitalShadows.api import DigitalShadowsApi
 from thehive4py.api import TheHiveApi
@@ -143,6 +145,7 @@ def get_incidents(dsapi, thapi, since):
 
 
     for i in response.get('content'):
+        logging.debug('Incident number: {}'.format(i.get('id')))
         alert = build_alert(i, {}, {"thumbnail":""})
         thapi.create_alert(alert)
 
@@ -160,6 +163,7 @@ def get_intel_incidents(dsapi, thapi, since):
     response = DigitalShadowsApi.find_intel_incident(dsapi, s).json()
 
     for i in response.get('content'):
+        logging.debug('Intel-incident number: {}'.format(i.get('id')))
         iocs = DigitalShadowsApi.get_intel_incident_iocs(dsapi, i.get('id')).json()
 
         if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
@@ -200,10 +204,17 @@ def run(argv):
 
     # get options
     try:
-        opts, args = getopt.getopt(argv, 'ht:',["time="])
+        opts, args = getopt.getopt(argv, 'lht:',["log=","time="])
     except getopt.GetoptError:
         print(__file__ + " -t <time>")
         sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ('-l', '--log'):
+            logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
+                                level=arg, format='%(asctime)s %(levelname)s %(message)s')
+            logging.debug('logging enabled')
+
     for opt,arg in opts:
         if opt == '-h':
             print(__file__ + " -t <time in minutes>")
@@ -211,7 +222,7 @@ def run(argv):
         elif opt in ('-t','--time'):
             time = arg
 
-
+    logging.info('ds2th.py started')
     # get username and password for TheHive
     if not TheHive['username'] and not TheHive['password']:
         TheHive['username'] = input("TheHive Username [%s]: " % getpass.getuser())
