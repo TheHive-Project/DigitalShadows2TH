@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
 import json
 
 class ds2markdown():
 
-    def __init__(self, content):
+    def __init__(self, content, thumbnail):
 
-        self.source =""
-        self.taskLog = "{0} {1} {2} {3} {4}".format(
+        self.source = ""
+        self.thdescription = "{0} {1} {2} {3} {4} {5} {6}".format(
             "**Scope:**: {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
                     content.get('scope',"None"),
                     content.get('type',"None"),
@@ -20,29 +19,31 @@ class ds2markdown():
                     content.get('published',"None"),
                     str(content.get('id',"None")),
                     self.tags(content)
-            ),"----\n\n#### Description ####  \n\n{}\n\n".format(content.get('description')),
+            ),"----\n\n#### Summary ####  \n\n{}\n\n".format(content.get('summary')),
+            "----\n\n#### Description ####  \n\n{}\n\n".format(content.get('description')),
             "{}\n\n".format(self.impactDescription(content)),
             "{}\n\n".format(self.mitigation(content)),
-            "{}\n\n".format(self.entitySummary(content))
+            "{}\n\n".format(self.entitySummary(content, thumbnail)),
+            "{}\n\n".format(self.lci(content))
 
         )
 
 
 
-    def entitySummary(self, content):
+    def entitySummary(self, content, thumbnail):
         source = ""
         if 'entitySummary' in content:
             c = content.get('entitySummary',"None")
-            source += self.Summary(c)
+            source += self.information(c, thumbnail)
 
             if 'summaryText' in c:
                 summaryText = c.get('summaryText',"None")
-                source += "#### Source data #### \n\n" + \
+                source += "\n\n----\n\n#### Source data #### \n\n" + \
                         "```\n{}\n```\n\n".format(summaryText)
 
         if 'IpAddressEntitySummary' in content:
             c = content.get('IpAddressEntity',"None")
-            source = self.Summary(c)
+            source = self.information(c, thumbnail)
 
             if 'IpAddressDetails' in c:
                 details = c.get('IpAddressDetails',"None")
@@ -81,7 +82,7 @@ class ds2markdown():
 
         if 'MessageEntitySummary' in content:
             c = content['MessageEntitySummary']
-            source += self.Summary(c)
+            source += self.information(c, thumbnail)
 
             if 'conversationFragment' in c:
                 conv = c.get('conversationFragment')
@@ -103,19 +104,22 @@ class ds2markdown():
         return source
 
 
-    def Summary(self, content):
+    def information(self, content, thumbnail):
         source = ""
         source += "----\n\n" + \
                 "#### Source Information #### \n\n" + \
-                "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n".format(
+                "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n**Thumbnail**: ![thumbnail][thumb]\n\n[thumb]: {4}\n\n".format(
                         content.get('source',"None"),
                         content.get('domain',"None"),
                         content.get('sourceDate',"None"),
-                        content.get('type',"None")
+                        content.get('type',"None"),
+                        thumbnail.get('thumbnail', "None")
+
                 )
 
         if 'dataBreach' in content:
             dataBreach = content.get('dataBreach')
+
             source += "\n\n#### Databreach target ####  \n\n" + \
                         "**Title:** {0}\n\n**Target domain:** {1}\n\n**Published:** {2}\n\n**Occured:** {3}\n\n**Modified:** {4}\n\n**Id:** {5}\n\n".format(
                                 dataBreach.get('title',"None"),
@@ -136,7 +140,7 @@ class ds2markdown():
     def impactDescription(self, content):
         impact = ""
         if "impactDescription" in content:
-            impact = "\n\n#### Impact Description #### \n\n{}" .format(
+            impact = "----\n\n#### Impact Description #### \n\n{}" .format(
                     content.get('impactDescription', "None")
             )
 
@@ -145,17 +149,17 @@ class ds2markdown():
     def mitigation(self, content):
         mitigation = ""
         if "mitigation" in content:
-            mitigation = "\n\n#### Mitigation #### \n\n{}".format(content.get('mitigation', "None"))
+            mitigation = "----\n\n#### Mitigation #### \n\n{}".format(content.get('mitigation', "None"))
         return mitigation
 
 
     def lci(self, content):
-        if content["linkedContentIncidents"] not in []:
-            linkedContentIncidents = ""
+        linkedContentIncidents = "----\n\n#### Linked incidents #### \n\n"
+        if content.get("linkedContentIncidents"):
             for lci in content["linkedContentIncidents"]:
                 linkedContentIncidents += "- {} \n\n".format(lci)
         else:
-            linkedContentIncidents = "None"
+            linkedContentIncidents += "None"
         return linkedContentIncidents
 
 

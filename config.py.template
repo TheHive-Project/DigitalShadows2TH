@@ -17,6 +17,7 @@ TheHive = {
   },
     'url':'',
     'username':'',
-    'password':''
+    'password':'',
+    'template':''
 
 }
