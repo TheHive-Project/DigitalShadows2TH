@@ -12,8 +12,7 @@ Copy `config.py.template` into `config.py` and fill all connection information n
 
 ## Usage
 
-Identify an interesting incident on DigitalShadows website you want to import un TheHive. Note the incident number and run the following command on the system it sits :
 
 ```
-$ ds2th.py -i <incidentNumber>
+$ ds2th.py -t  <time> --log=<FACILITY>
 ```
