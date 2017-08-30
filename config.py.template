@@ -6,7 +6,7 @@ DigitalShadows = {
     'url':'',
     'ds_key':'',
     'ds_secret':'',
-    'verify':False,
+    'verify':True,
     'fulltext':'true'
 }
 
