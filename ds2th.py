@@ -140,9 +140,9 @@ def build_alert(incident, observables, thumbnail):
                  )
 
 def get_incidents(dsapi, thapi, since):
-    s = (datetime.datetime.now() - datetime.timedelta(minutes=int(since))).isoformat() + 'Z'
+    s = (datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat() + 'Z'
     response = DigitalShadowsApi.find_incident(dsapi, s).json()
-
+    logging.debug('DigitalShadows: {} incidents(s) downloaded'.format(response['total']))
 
     for i in response.get('content'):
         logging.debug('Incident number: {}'.format(i.get('id')))
@@ -158,17 +158,16 @@ def get_intel_incidents(dsapi, thapi, since):
     :param since: int, number of minutes, period of time
     :return:
     """
-    s = "{}/{}".format((datetime.datetime.now() - datetime.timedelta(minutes=int(since))).isoformat(),
-                       datetime.datetime.now().isoformat())
+    s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
+                       datetime.datetime.utcnow().isoformat())
     response = DigitalShadowsApi.find_intel_incident(dsapi, s).json()
+    logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(response['total']))
 
     for i in response.get('content'):
         logging.debug('Intel-incident number: {}'.format(i.get('id')))
         iocs = DigitalShadowsApi.get_intel_incident_iocs(dsapi, i.get('id')).json()
 
         if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
-            # i.get('entitySummary')
-            # i.get('entitySummary').get('screenshotThumbnailId')
             thumbnail = get_thumbnails(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
         else:
             thumbnail = {'thumbnail':''}
