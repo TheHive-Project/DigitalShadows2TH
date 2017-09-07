@@ -64,7 +64,7 @@ class DigitalShadowsApi():
                 "tags": [],
                 "tagOperator": "AND",
                 "dateRange": since,
-                "dateRangeField": "occurred",
+                "dateRangeField": "published",
                 "types": [],
                 "withFeedback": True,
                 "withoutFeedback": True
