@@ -20,8 +20,8 @@ class DigitalShadowsApi():
         self.proxies = config['proxies']
         self.verify = config['verify']
         self.headers = {
-            'Content-Type': 'application/vnd.polaris-v28+json',
-            'Accept': 'application/vnd.polaris-v28+json'
+            'Content-Type': 'application/vnd.polaris-v29+json',
+            'Accept': 'application/vnd.polaris-v29+json'
         }
         self.session = requests.Session()
         self.auth = requests.auth.HTTPBasicAuth(username=self.key,
@@ -45,16 +45,47 @@ class DigitalShadowsApi():
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def find_incident(self, since, property='occurred', direction='DESCENDING', detailed='true', fulltext='false'):
+
+    def find_incidents(self, since, property='published', direction='ASCENDING'):
         req = self.url + '/api/incidents/find'
         headers = self.headers
-        payload = {'since': since , 'sort.property': property, 'sort.direction':direction, 'detailed': detailed, 'fulltext':fulltext}
+        payload = json.dumps({
+          "filter": {
+            "severities": [],
+            "tags": [],
+            "tagOperator": "AND",
+            "dateRange": since,
+            "dateRangeField": property,
+            "types": [],
+            "withFeedback": True,
+            "withoutFeedback": True,
+            "alerted": False,
+            "withTakedown": True,
+            "withoutTakedown": True,
+            "withContentRemoved": True,
+            "withoutContentRemoved": True,
+            "statuses": [
+              "UNREAD",
+              "READ"
+            ],
+            "repostedCredentials": []
+          },
+          "sort": {
+            "property": "date",
+            "direction": "DESCENDING"
+          },
+          "pagination": {
+            "size": 50,
+            "offset": 0
+          },
+          "subscribed": True
+        })
         try:
-            return self.session.get(req, headers=headers, auth=self.auth, proxies=self.proxies, params=payload, verify=self.verify)
+            return requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def find_intel_incident(self, since, property='verified', direction='ASCENDING'):
+    def find_intel_incidents(self, since, property='verified', direction='ASCENDING'):
         req = self.url + '/api/intel-incidents/find'
         headers = self.headers
 
@@ -81,9 +112,26 @@ class DigitalShadowsApi():
 
 
         try:
-            return self.session.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            return requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
+
+    def get_incident_iocs(self, id):
+        req = "{}/api/incidents/{}/iocs".format(self.url, id)
+        headers = self.headers
+        payload = {
+            "filter": {},
+            "sort": {
+                "property": "value",
+                "direction": "ASCENDING"
+            }
+        }
+        try:
+            return self.session.post(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                     data=json.dumps(payload), verify=self.verify)
+        except requests.exceptions.RequestException as e:
+                sys.exit("Error: {}".format(e))
+
 
     def get_intel_incident_iocs(self, id):
         req = "{}/api/intel-incidents/{}/iocs".format(self.url, id)
@@ -102,11 +150,20 @@ class DigitalShadowsApi():
                 sys.exit("Error: {}".format(e))
 
 
-    def get_intel_incident_thumbnail(self, id):
+    def get_screenshot(self, id):
+        req = "{}/api/external/downloads/{}".format(self.url, id)
+        headers = self.headers
+        try:
+            return requests.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                 verify=self.verify)
+        except requests.exceptions.RequestException as e:
+                sys.exit("Error: {}".format(e))
+
+    def get_thumbnail(self, id):
         req = "{}/api/thumbnails/{}".format(self.url, id)
         headers = self.headers
         try:
-            return self.session.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
+            return requests.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
                                  verify=self.verify)
         except requests.exceptions.RequestException as e:
                 sys.exit("Error: {}".format(e))

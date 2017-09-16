@@ -10,7 +10,7 @@ class ds2markdown():
 
         self.source = ""
         self.thdescription = "{0} {1} {2} {3} {4} {5} {6}".format(
-            "**Scope:**: {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
+            "**Scope:** {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
                     content.get('scope',"None"),
                     content.get('type',"None"),
                     content.get('occurred',"None"),
@@ -106,21 +106,30 @@ class ds2markdown():
 
     def information(self, content, thumbnail):
         source = ""
-        source += "----\n\n" + \
+        if thumbnail.get('thumbnail') != "" :
+            source += "----\n\n" + \
                 "#### Source Information #### \n\n" + \
-                "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n**Thumbnail**: ![thumbnail][thumb]\n\n[thumb]: {4}\n\n".format(
+                "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n![thumbnail][thumb]\n\n[thumb]: {4}\n\n".format(
                         content.get('source',"None"),
                         content.get('domain',"None"),
                         content.get('sourceDate',"None"),
                         content.get('type',"None"),
                         thumbnail.get('thumbnail', "None")
-
+                )
+        else:
+            source += "----\n\n" + \
+                "#### Source Information #### \n\n" + \
+                "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n".format(
+                        content.get('source',"None"),
+                        content.get('domain',"None"),
+                        content.get('sourceDate',"None"),
+                        content.get('type',"None")
                 )
 
         if 'dataBreach' in content:
             dataBreach = content.get('dataBreach')
 
-            source += "\n\n#### Databreach target ####  \n\n" + \
+            source += "----\n\n#### Databreach target ####  \n\n" + \
                         "**Title:** {0}\n\n**Target domain:** {1}\n\n**Published:** {2}\n\n**Occured:** {3}\n\n**Modified:** {4}\n\n**Id:** {5}\n\n".format(
                                 dataBreach.get('title',"None"),
                                 dataBreach.get('domainName',"None"),
@@ -131,7 +140,7 @@ class ds2markdown():
                         )
 
         if 'secureSocketInspection' in content:
-            source += "**Technical information** \n\n ```\n\n{}\n\n```".format( json.dumps(content.get('secureSocketInspection'),  indent=4))
+            source += "----\n\n#### Technical information #### \n\n ```\n\n{}\n\n```".format( json.dumps(content.get('secureSocketInspection'),  indent=4))
 
 
         return source
@@ -167,7 +176,9 @@ class ds2markdown():
         if 'tags' in content:
             t = ""
             for tag in content['tags']:
-                t += "_{}_, ".format(tag['name'])
+                if t != "":
+                    t +=", "
+                t += "_{}_".format(tag['name'])
         else:
             t += "-"
         return t

@@ -53,7 +53,8 @@ def th_severity(sev):
         'VERY_LOW':1,
         'LOW':1,
         'MEDIUM':2,
-        'HIGH':3
+        'HIGH':3,
+        'VERY_HIGH':3
     }
     return severities[sev]
 
@@ -140,13 +141,25 @@ def build_alert(incident, observables, thumbnail):
                  )
 
 def get_incidents(dsapi, thapi, since):
-    s = (datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat() + 'Z'
-    response = DigitalShadowsApi.find_incident(dsapi, s).json()
-    logging.debug('DigitalShadows: {} incidents(s) downloaded'.format(response['total']))
+    """
+    :param dsapi: request to DigitalShadows
+    :param thapi: reauest to TheHive
+    :param since: int, number of minutes, period of time
+    :return:
+    """
+    s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
+                       datetime.datetime.utcnow().isoformat())
+    response = DigitalShadowsApi.find_incidents(dsapi, s).json()
+    logging.debug('DigitalShadows: {}  incidents(s) downloaded'.format(response['total']))
 
     for i in response.get('content'):
-        logging.debug('Incident number: {}'.format(i.get('id')))
-        alert = build_alert(i, {}, {"thumbnail":""})
+        if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
+            print("incident {}: 1 thumbnail".format(i.get('id')))
+            thumbnail = get_thumbnails(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
+        else:
+            print("incident {}: 0 thumbnail".format(i.get('id')))
+            thumbnail = {'thumbnail':""}
+        alert = build_alert(i, {}, thumbnail)
         thapi.create_alert(alert)
 
 
@@ -160,7 +173,7 @@ def get_intel_incidents(dsapi, thapi, since):
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
-    response = DigitalShadowsApi.find_intel_incident(dsapi, s).json()
+    response = DigitalShadowsApi.find_intel_incidents(dsapi, s).json()
     logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(response['total']))
 
     for i in response.get('content'):
@@ -168,8 +181,10 @@ def get_intel_incidents(dsapi, thapi, since):
         iocs = DigitalShadowsApi.get_intel_incident_iocs(dsapi, i.get('id')).json()
 
         if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
+            print("intel incident {}: 1 thumbnail".format(i.get('id')))
             thumbnail = get_thumbnails(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
         else:
+            print("intel incident {}: 0 thumbnail".format(i.get('id')))
             thumbnail = {'thumbnail':''}
         alert = build_alert(i, iocs, thumbnail)
 
@@ -182,7 +197,7 @@ def get_thumbnails(dsapi, thumbnail_id):
     :param thumbnail_id:
     :return: dict {base64:}
     """
-    response = DigitalShadowsApi.get_intel_incident_thumbnail(dsapi,thumbnail_id)
+    response = DigitalShadowsApi.get_thumbnail(dsapi,thumbnail_id)
     if response.status_code == 200:
         with BytesIO(response.content) as bytes:
             encoded = base64.b64encode(bytes.read())
@@ -190,7 +205,7 @@ def get_thumbnails(dsapi, thumbnail_id):
 
         return {"thumbnail":"data:{};base64,{}".format(response.headers['Content-Type'], b64_thumbnail)}
     else:
-        return {thumbnail: ""}
+        return {"thumbnail": ""}
 
 def run(argv):
 
