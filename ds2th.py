@@ -128,7 +128,7 @@ def build_alert(incident, observables, thumbnail):
     :return: Alert object
     """
 
-    return Alert(title="{}".format(incident.get('title')),
+    a =  Alert(title="{}".format(incident.get('title')),
                  tlp=2,
                  severity=th_severity(incident.get('severity')),
                  description=ds2markdown(incident, thumbnail).thdescription,
@@ -139,63 +139,103 @@ def build_alert(incident, observables, thumbnail):
                  sourceRef=str(incident.get('id')),
                  artifacts=build_observables(observables)
                  )
+    return a
 
-def get_incidents(dsapi, thapi, since):
+def get_incidents(dsapi, since):
     """
     :param dsapi: request to DigitalShadows
-    :param thapi: reauest to TheHive
     :param since: int, number of minutes, period of time
-    :return:
+    :return: list of TheHive alerts
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
-    response = DigitalShadowsApi.find_incidents(dsapi, s).json()
+    response = dsapi.find_incidents(s).json()
     logging.debug('DigitalShadows: {}  incidents(s) downloaded'.format(response['total']))
 
+    alerts = []
     for i in response.get('content'):
         if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
-            print("incident {}: 1 thumbnail".format(i.get('id')))
-            thumbnail = get_thumbnails(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
+            thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
         else:
-            print("incident {}: 0 thumbnail".format(i.get('id')))
             thumbnail = {'thumbnail':""}
-        alert = build_alert(i, {}, thumbnail)
-        thapi.create_alert(alert)
+        alerts.append(build_alert(i, {}, thumbnail))
+    return alerts
+
+def get_incident(dsapi, id):
+    """
+    :param dsapi: DigitalShadows api init
+    :param id: incident id
+    :return: TheHive alert
+    """
+    response = dsapi.get_incident(id).json()
+    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
+        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+    else:
+        thumbnail = {'thumbnail': ""}
+    return build_alert(response, {}, thumbnail)
+
+def get_intel_incident(dsapi, id):
+    """
+
+    :param dsapi: DigitalShadows api init
+    :param id: intel-incident id
+    :return: Thehive alert
+    """
+    response = dsapi.get_intel_incident(id).json()
+    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
+        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+    else:
+        thumbnail = {'thumbnail': ""}
+    return build_alert(response, {}, thumbnail)
 
 
-def get_intel_incidents(dsapi, thapi, since):
+def get_intel_incidents(dsapi, since):
     """
 
     :param dsapi: request to DigitalShadows
-    :param thapi: reauest to TheHive
     :param since: int, number of minutes, period of time
-    :return:
+    :return: alert
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
-    response = DigitalShadowsApi.find_intel_incidents(dsapi, s).json()
+    response = dsapi.find_intel_incidents(s).json()
     logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(response['total']))
 
+    alerts = []
     for i in response.get('content'):
         logging.debug('Intel-incident number: {}'.format(i.get('id')))
-        iocs = DigitalShadowsApi.get_intel_incident_iocs(dsapi, i.get('id')).json()
+        iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
 
         if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
-            print("intel incident {}: 1 thumbnail".format(i.get('id')))
-            thumbnail = get_thumbnails(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
+            thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
         else:
-            print("intel incident {}: 0 thumbnail".format(i.get('id')))
             thumbnail = {'thumbnail':''}
-        alert = build_alert(i, iocs, thumbnail)
+        alerts.append(build_alert(i, iocs, thumbnail))
+    return alerts
 
-        thapi.create_alert(alert)
 
-def get_thumbnails(dsapi, thumbnail_id):
+def get_intel_incident(dsapi, id):
+    """
+
+    :param dsapi: DigitalShadows api init
+    :param id: intel-incident id
+    :return: Thehive alert
+    """
+    response = dsapi.get_intel_incident(id).json()
+    iocs = dsapi.get_intel_incident_iocs(response.get('id')).json()
+    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
+        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+    else:
+        thumbnail = {'thumbnail': ""}
+    return build_alert(response, iocs, thumbnail)
+
+
+def build_thumbnail(dsapi, thumbnail_id):
     """
     Get Intel Incident screenshot thumbnail
     :param dsapi:
     :param thumbnail_id:
-    :return: dict {base64:}
+    :return: dict with base64 pict ready to be added in markdown
     """
     response = DigitalShadowsApi.get_thumbnail(dsapi,thumbnail_id)
     if response.status_code == 200:
@@ -207,20 +247,33 @@ def get_thumbnails(dsapi, thumbnail_id):
     else:
         return {"thumbnail": ""}
 
+def create_thehive_alerts(config, alerts):
+    """
+
+    :param TheHive: TheHive config
+    :param alerts: List of alerts
+    :return:
+    """
+    if len(alerts) > 0:
+        thapi = TheHiveApi(config.get('url', None), config.get('principal'), config.get('password', None),
+                       config.get(  'proxies'))
+        for a in alerts:
+            thapi.createAlert(a)
+
+
 def run(argv):
 
     """
         Download DigitalShadows incident and create a new Case in TheHive
-
-        :argv incident number
+        :argv (options, log, since, intel, incident)
     """
 
 
     # get options
     try:
-        opts, args = getopt.getopt(argv, 'lht:',["log=","time="])
+        opts, args = getopt.getopt(argv, 'lhs:I:i:',["log=","since=", "intel=", "incident="])
     except getopt.GetoptError:
-        print(__file__ + " -t <time>")
+        print(__file__ + " -s <time>")
         sys.exit(2)
 
     for opt, arg in opts:
@@ -231,32 +284,41 @@ def run(argv):
 
     for opt,arg in opts:
         if opt == '-h':
-            print(__file__ + " -t <time in minutes>")
+            print(__file__ + " -s <time in minutes>")
             sys.exit()
-        elif opt in ('-t','--time'):
-            time = arg
+        elif opt in ('-s','--since'):
+            since = arg
 
-    logging.info('ds2th.py started')
-    # get username and password for TheHive
-    if not TheHive['username'] and not TheHive['password']:
-        TheHive['username'] = input("TheHive Username [%s]: " % getpass.getuser())
-        TheHive['password'] = getpass.getpass("TheHive Password: ")
+            logging.info('ds2th.py started')
+            # init DigitalShadows api
+            dsapi = DigitalShadowsApi(DigitalShadows)
+            # get Intel incidents
+            alerts = get_intel_incidents(dsapi, since)
+            # get incidents
+            alerts.append(get_incidents(dsapi, since))
+            # create alerts
+            create_thehive_alerts(TheHive, alerts)
 
-    thapi = TheHiveApi(TheHive['url'],TheHive['username'],
-                        TheHive['password'], TheHive['proxies'])
+        elif opt in ('-I', '--intel'):
+            # init DigitalShadows api
+            dsapi = DigitalShadowsApi(DigitalShadows)
+            # Get Intel-incident from id
+            alerts.append(get_intel_incident(dsapi, id))
+            # create alerts
+            create_thehive_alerts(TheHive, alerts)
 
-
-    # Create DigitalShadows session and get incidents
-
-    dsapi = DigitalShadowsApi(DigitalShadows)
-    get_incidents(dsapi,thapi,time)
-    get_intel_incidents(dsapi, thapi, time)
-
+        elif opt in ('-i', '--incident'):
+            # init DigitalShadows api
+            dsapi = DigitalShadowsApi(DigitalShadows)
+            # Get incident from id
+            alerts.append(get_incident(dsapi, id))
+            # create alerts
+            create_thehive_alerts(TheHive, alerts)
 
 
 if __name__ == '__main__':
     if len(sys.argv[1:]) > 0:
         run(sys.argv[1:])
     else:
-        print(__file__ + " -t <duration>")
+        print(__file__ + " -s <since last time in minutes>")
         sys.exit(2)

@@ -1,5 +1,8 @@
 # custom
 config.py
+tests/
+tests/*
+
 .idea
 # Byte-compiled / optimized / DLL files
 __pycache__/
