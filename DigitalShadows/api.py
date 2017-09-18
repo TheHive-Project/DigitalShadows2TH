@@ -6,13 +6,12 @@ import requests
 import json
 
 class DigitalShadowsApi():
-    """
-		Python API for DigitalShadows
-
-		:param config
-	"""
 
     def __init__(self, config):
+        """
+        Python API for DigitalShadows
+        :param config
+        """
 
         self.url = config['url']
         self.key = config['ds_key']
@@ -28,6 +27,12 @@ class DigitalShadowsApi():
                                                 password=self.secret)
 
     def get_incident(self, id, fulltext='true'):
+        """
+        Fetch DigitalShadows incident
+        :param id: int
+        :param fulltext: boolean
+        :return: requests response object
+        """
         req = self.url + '/api/incidents/{}'.format(id)
         headers = self.headers
         try:
@@ -36,7 +41,13 @@ class DigitalShadowsApi():
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def get-intel-incident(self, id, fulltext='true'):
+    def get_intel_incident(self, id, fulltext='true'):
+        """
+        Fetch DigitalShadows Intel Incident
+        :param id: int
+        :param fulltext: boolean
+        :return: requests response
+        """
         req = self.url + '/api/intel-incidents/{}?fulltext='.format(id) + fulltext
         headers = self.headers
         try:
@@ -47,6 +58,13 @@ class DigitalShadowsApi():
 
 
     def find_incidents(self, since, property='published', direction='ASCENDING'):
+        """
+        Fetch DigitalShadows `published` (default property param) incidents since last `since` minutes
+        :param since: int
+        :param property: str
+        :param direction: str
+        :return: requests response
+        """
         req = self.url + '/api/incidents/find'
         headers = self.headers
         payload = json.dumps({
@@ -72,7 +90,7 @@ class DigitalShadowsApi():
           },
           "sort": {
             "property": "date",
-            "direction": "DESCENDING"
+            "direction": direction
           },
           "pagination": {
             "size": 50,
@@ -86,6 +104,13 @@ class DigitalShadowsApi():
             sys.exit("Error: {}".format(e))
 
     def find_intel_incidents(self, since, property='verified', direction='ASCENDING'):
+        """
+        Fetch DigitalShadows `published` (default property param) intel-incidents since last `since` minutes
+        :param since: int
+        :param property: str
+        :param direction: str
+        :return: requests response
+        """
         req = self.url + '/api/intel-incidents/find'
         headers = self.headers
 
@@ -116,24 +141,13 @@ class DigitalShadowsApi():
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def get_incident_iocs(self, id):
-        req = "{}/api/incidents/{}/iocs".format(self.url, id)
-        headers = self.headers
-        payload = json.dumps({
-            "filter": {},
-            "sort": {
-                "property": "value",
-                "direction": "ASCENDING"
-            }
-        })
-        try:
-            return self.session.post(req, headers=headers, auth=self.auth, proxies=self.proxies,
-                                     data=payload, verify=self.verify)
-        except requests.exceptions.RequestException as e:
-                sys.exit("Error: {}".format(e))
-
 
     def get_intel_incident_iocs(self, id):
+        """
+        Fetch DigitalShadows IOCS for intel-incidents id
+        :param id: int
+        :return: requests response
+        """
         req = "{}/api/intel-incidents/{}/iocs".format(self.url, id)
         headers = self.headers
         payload = json.dumps({
@@ -151,6 +165,11 @@ class DigitalShadowsApi():
 
 
     def get_screenshot(self, id):
+        """
+        Fetch screenshot for incident or intel-incident id
+        :param id: int
+        :return: requests response
+        """
         req = "{}/api/external/downloads/{}".format(self.url, id)
         headers = self.headers
         try:
@@ -160,6 +179,11 @@ class DigitalShadowsApi():
                 sys.exit("Error: {}".format(e))
 
     def get_thumbnail(self, id):
+        """
+        Fetch thumbnail for incident or intel-incident id
+        :param id: int
+        :return: requests response
+        """
         req = "{}/api/thumbnails/{}".format(self.url, id)
         headers = self.headers
         try:
