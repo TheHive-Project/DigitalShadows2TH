@@ -164,6 +164,7 @@ def get_incidents(dsapi, since):
             alerts.append(build_alert(i, {}, thumbnail))
         return alerts
     else:
+        logging.debug("Error while fetching incident #{}: {}".format(id, response.get('content')))
         sys.exit("Error while fetching incident #{}: {}".format(id, response.get('content')))
 
 def get_incident(dsapi, id):
@@ -179,28 +180,10 @@ def get_incident(dsapi, id):
             thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
         else:
             thumbnail = {'thumbnail': ""}
-        return build_alert(response, {}, thumbnail)
+        return build_alert(json, {}, thumbnail)
     else:
+        logging.debug("Error while fetching incident #{}: {}".format(id, response.get('content')))
         sys.exit("Error while fetching incident #{}: {}".format(id, response.get('content')))
-
-def get_intel_incident(dsapi, id):
-    """
-
-    :param dsapi: DigitalShadows api init
-    :param id: intel-incident id
-    :return: Thehive alert
-    """
-    response = dsapi.get_intel_incident(id)
-    if response.get('status') == 'success':
-        json = response.get('content')
-        if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
-            thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
-        else:
-            thumbnail = {'thumbnail': ""}
-        return build_alert(response, {}, thumbnail)
-    else:
-        sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('content')))
-
 
 def get_intel_incidents(dsapi, since):
     """
@@ -229,23 +212,28 @@ def get_intel_incidents(dsapi, since):
             alerts.append(build_alert(i, iocs, thumbnail))
         return alerts
     else:
+        logging.debug("Error while searching intel-incidents since {} min: {}".format(s, response.get('content')))
         sys.exit("Error while searching intel-incidents since {} min: {}".format(s, response.get('content')))
 
+def get_intel_incident(dsapi, id):
+    """
 
-# def get_intel_incident(dsapi, id):
-#     """
-#
-#     :param dsapi: DigitalShadows api init
-#     :param id: intel-incident id
-#     :return: Thehive alert
-#     """
-#     response = dsapi.get_intel_incident(id).json()
-#     iocs = dsapi.get_intel_incident_iocs(response.get('id')).json()
-#     if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
-#         thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
-#     else:
-#         thumbnail = {'thumbnail': ""}
-#     return build_alert(response, iocs, thumbnail)
+    :param dsapi: DigitalShadows api init
+    :param id: intel-incident id
+    :return: Thehive alert
+    """
+    response = dsapi.get_intel_incident(id)
+    if response.get('status') == 'success':
+        json = response.get('content')
+        if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
+            thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+        else:
+            thumbnail = {'thumbnail': ""}
+        iocs = dsapi.get_intel_incident_iocs(json.get('id')).json()
+        return build_alert(json, iocs, thumbnail)
+    else:
+        logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('content'))
+        sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('content'))
 
 
 def build_thumbnail(dsapi, thumbnail_id):
@@ -267,7 +255,6 @@ def build_thumbnail(dsapi, thumbnail_id):
 
 def create_thehive_alerts(config, alerts):
     """
-
     :param TheHive: TheHive config
     :param alerts: List of alerts
     :return:
@@ -277,7 +264,6 @@ def create_thehive_alerts(config, alerts):
                        config.get(  'proxies'))
         for a in alerts:
             thapi.createAlert(a)
-
 
 def run(argv):
 
@@ -306,7 +292,7 @@ def run(argv):
             sys.exit()
         elif opt in ('-s','--since'):
             since = arg
-
+            alerts = []
             logging.info('ds2th.py started')
             # init DigitalShadows api
             dsapi = DigitalShadowsApi(DigitalShadows)
@@ -318,6 +304,7 @@ def run(argv):
             create_thehive_alerts(TheHive, alerts)
 
         elif opt in ('-I', '--intel'):
+            alerts = []
             # init DigitalShadows api
             dsapi = DigitalShadowsApi(DigitalShadows)
             # Get Intel-incident from id
@@ -326,6 +313,7 @@ def run(argv):
             create_thehive_alerts(TheHive, alerts)
 
         elif opt in ('-i', '--incident'):
+            alerts = []
             # init DigitalShadows api
             dsapi = DigitalShadowsApi(DigitalShadows)
             # Get incident from id
