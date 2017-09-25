@@ -22,9 +22,17 @@ class DigitalShadowsApi():
             'Content-Type': 'application/vnd.polaris-v29+json',
             'Accept': 'application/vnd.polaris-v29+json'
         }
-        self.session = requests.Session()
         self.auth = requests.auth.HTTPBasicAuth(username=self.key,
                                                 password=self.secret)
+
+    def response(self, status, content):
+        """
+        status: str = success/failure
+        content: JSON
+        return: JSON
+        """
+
+        return {'status':status, 'json': content}
 
     def get_incident(self, id, fulltext='true'):
         """
@@ -36,8 +44,12 @@ class DigitalShadowsApi():
         req = self.url + '/api/incidents/{}'.format(id)
         headers = self.headers
         try:
-            return requests.get(req, headers=headers, auth=self.auth,
+            resp = requests.get(req, headers=headers, auth=self.auth,
                                     proxies=self.proxies, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
@@ -51,8 +63,12 @@ class DigitalShadowsApi():
         req = self.url + '/api/intel-incidents/{}?fulltext='.format(id) + fulltext
         headers = self.headers
         try:
-            return requests.get(req, headers=headers, auth=self.auth,
+            resp =  requests.get(req, headers=headers, auth=self.auth,
                                     proxies=self.proxies, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
@@ -99,7 +115,11 @@ class DigitalShadowsApi():
           "subscribed": True
         })
         try:
-            return requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            resp =  requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 

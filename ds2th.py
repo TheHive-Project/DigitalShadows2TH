@@ -149,17 +149,22 @@ def get_incidents(dsapi, since):
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
-    response = dsapi.find_incidents(s).json()
-    logging.debug('DigitalShadows: {}  incidents(s) downloaded'.format(response['total']))
+    response = dsapi.find_incidents(s)
 
-    alerts = []
-    for i in response.get('content'):
-        if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
-            thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
-        else:
-            thumbnail = {'thumbnail':""}
-        alerts.append(build_alert(i, {}, thumbnail))
-    return alerts
+    if response.status == 'success':
+        json = response.get('json')
+        logging.debug('DigitalShadows: {}  incidents(s) downloaded'.format(response['total']))
+
+        alerts = []
+        for i in json.get('content'):
+            if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
+                thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
+            else:
+                thumbnail = {'thumbnail':""}
+            alerts.append(build_alert(i, {}, thumbnail))
+        return alerts
+    else:
+        sys.exit("Error while fetching incident #{}: {}".format(id, response.get('content')))
 
 def get_incident(dsapi, id):
     """
@@ -167,12 +172,16 @@ def get_incident(dsapi, id):
     :param id: incident id
     :return: TheHive alert
     """
-    response = dsapi.get_incident(id).json()
-    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
-        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+    response = dsapi.get_incident(id)
+    if response.get('status') == 'success':
+        json = response.get('content')
+        if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
+            thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+        else:
+            thumbnail = {'thumbnail': ""}
+        return build_alert(response, {}, thumbnail)
     else:
-        thumbnail = {'thumbnail': ""}
-    return build_alert(response, {}, thumbnail)
+        sys.exit("Error while fetching incident #{}: {}".format(id, response.get('content')))
 
 def get_intel_incident(dsapi, id):
     """
@@ -181,12 +190,16 @@ def get_intel_incident(dsapi, id):
     :param id: intel-incident id
     :return: Thehive alert
     """
-    response = dsapi.get_intel_incident(id).json()
-    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
-        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+    response = dsapi.get_intel_incident(id)
+    if response.get('status') == 'success':
+        json = response.get('content')
+        if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
+            thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+        else:
+            thumbnail = {'thumbnail': ""}
+        return build_alert(response, {}, thumbnail)
     else:
-        thumbnail = {'thumbnail': ""}
-    return build_alert(response, {}, thumbnail)
+        sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('content')))
 
 
 def get_intel_incidents(dsapi, since):
@@ -198,36 +211,41 @@ def get_intel_incidents(dsapi, since):
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
-    response = dsapi.find_intel_incidents(s).json()
-    logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(response['total']))
+    response = dsapi.find_intel_incidents(s)
 
-    alerts = []
-    for i in response.get('content'):
-        logging.debug('Intel-incident number: {}'.format(i.get('id')))
-        iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
+    if response.get('status') == 'success':
+        json = response.get('content')
+        logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(response['total']))
 
-        if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
-            thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
-        else:
-            thumbnail = {'thumbnail':''}
-        alerts.append(build_alert(i, iocs, thumbnail))
-    return alerts
+        alerts = []
+        for i in json.get('content'):
+            logging.debug('Intel-incident number: {}'.format(i.get('id')))
+            iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
 
-
-def get_intel_incident(dsapi, id):
-    """
-
-    :param dsapi: DigitalShadows api init
-    :param id: intel-incident id
-    :return: Thehive alert
-    """
-    response = dsapi.get_intel_incident(id).json()
-    iocs = dsapi.get_intel_incident_iocs(response.get('id')).json()
-    if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
-        thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+            if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
+                thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
+            else:
+                thumbnail = {'thumbnail':''}
+            alerts.append(build_alert(i, iocs, thumbnail))
+        return alerts
     else:
-        thumbnail = {'thumbnail': ""}
-    return build_alert(response, iocs, thumbnail)
+        sys.exit("Error while searching intel-incidents since {} min: {}".format(s, response.get('content')))
+
+
+# def get_intel_incident(dsapi, id):
+#     """
+#
+#     :param dsapi: DigitalShadows api init
+#     :param id: intel-incident id
+#     :return: Thehive alert
+#     """
+#     response = dsapi.get_intel_incident(id).json()
+#     iocs = dsapi.get_intel_incident_iocs(response.get('id')).json()
+#     if response.get('entitySummary') and response.get('entitySummary').get('screenshotThumbnailId'):
+#         thumbnail = build_thumbnail(dsapi, response.get('entitySummary').get('screenshotThumbnailId'))
+#     else:
+#         thumbnail = {'thumbnail': ""}
+#     return build_alert(response, iocs, thumbnail)
 
 
 def build_thumbnail(dsapi, thumbnail_id):
