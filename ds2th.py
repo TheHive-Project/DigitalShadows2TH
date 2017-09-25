@@ -260,8 +260,8 @@ def create_thehive_alerts(config, alerts):
     :return:
     """
     if len(alerts) > 0:
-        thapi = TheHiveApi(config.get('url', None), config.get('principal'), config.get('password', None),
-                       config.get(  'proxies'))
+        thapi = TheHiveApi(config.get('url', None), config.get('key'), config.get('password', None),
+                           config.get(  'proxies'))
         for a in alerts:
             thapi.createAlert(a)
 
