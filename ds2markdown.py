@@ -7,7 +7,7 @@ import json
 class ds2markdown():
 
     def __init__(self, content, thumbnail):
-
+        self.thumbnail = thumbnail
         self.source = ""
         self.thdescription = "{0} {1} {2} {3} {4} {5} {6}".format(
             "**Scope:** {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
@@ -23,18 +23,18 @@ class ds2markdown():
             "----\n\n#### Description ####  \n\n{}\n\n".format(content.get('description')),
             "{}\n\n".format(self.impactDescription(content)),
             "{}\n\n".format(self.mitigation(content)),
-            "{}\n\n".format(self.entitySummary(content, thumbnail)),
+            "{}\n\n".format(self.entitySummary(content)),
             "{}\n\n".format(self.lci(content))
 
         )
 
 
 
-    def entitySummary(self, content, thumbnail):
+    def entitySummary(self, content):
         source = ""
         if 'entitySummary' in content:
             c = content.get('entitySummary',"None")
-            source += self.information(c, thumbnail)
+            source += self.information(c)
 
             if 'summaryText' in c:
                 summaryText = c.get('summaryText',"None")
@@ -43,7 +43,7 @@ class ds2markdown():
 
         if 'IpAddressEntitySummary' in content:
             c = content.get('IpAddressEntity',"None")
-            source = self.information(c, thumbnail)
+            source = self.information(c)
 
             if 'IpAddressDetails' in c:
                 details = c.get('IpAddressDetails',"None")
@@ -82,7 +82,7 @@ class ds2markdown():
 
         if 'MessageEntitySummary' in content:
             c = content['MessageEntitySummary']
-            source += self.information(c, thumbnail)
+            source += self.information(c)
 
             if 'conversationFragment' in c:
                 conv = c.get('conversationFragment')
@@ -104,9 +104,9 @@ class ds2markdown():
         return source
 
 
-    def information(self, content, thumbnail):
+    def information(self, content):
         source = ""
-        if thumbnail.get('thumbnail') != "" :
+        if self.thumbnail.get('thumbnail') != "":
             source += "----\n\n" + \
                 "#### Source Information #### \n\n" + \
                 "**Source:** {0}\n\n**Domain:** {1}\n\n**Date:** {2}\n\n**Type:** {3}\n\n![thumbnail][thumb]\n\n[thumb]: {4}\n\n".format(
@@ -114,7 +114,7 @@ class ds2markdown():
                         content.get('domain',"None"),
                         content.get('sourceDate',"None"),
                         content.get('type',"None"),
-                        thumbnail.get('thumbnail', "None")
+                        self.thumbnail.get('thumbnail', "None")
                 )
         else:
             source += "----\n\n" + \
