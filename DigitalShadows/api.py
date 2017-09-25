@@ -63,7 +63,7 @@ class DigitalShadowsApi():
         req = self.url + '/api/intel-incidents/{}?fulltext='.format(id) + fulltext
         headers = self.headers
         try:
-            resp =  requests.get(req, headers=headers, auth=self.auth,
+            resp = requests.get(req, headers=headers, auth=self.auth,
                                     proxies=self.proxies, verify=self.verify)
             if resp.status_code == 200:
                 return self.response("success", resp.json())
@@ -157,7 +157,11 @@ class DigitalShadowsApi():
 
 
         try:
-            return requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            resp = requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
