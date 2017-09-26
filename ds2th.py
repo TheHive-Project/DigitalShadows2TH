@@ -322,18 +322,24 @@ def run():
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                         help="generate a log file and and active debug logging")
     subparsers = parser.add_subparsers(help="subcommand help")
-    parser_incident = subparsers.add_parser('inc', help="specify incidents to fetch")
+    parser_incident = subparsers.add_parser('inc', help="specify IDs of incidents to fetch")
     parser_incident.add_argument("-i", "--incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS incidents by ID")
     parser_incident.add_argument("-I", "--intel-incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS intel-incidents by ID")
-    parser_find = subparsers.add_parser('find', help="find subcommand help")
-    parser_find.add_argument("-s", "--since", metavar="M", nargs=1, type=int, help="Get all incident since last [M] minutes")
+    parser_find = subparsers.add_parser('find', help="find incidents and intel-incidents in time")
+    parser_find.add_argument("-s", "--since", metavar="M", nargs=1, type=int,required=True, help="Get all incident since last [M] minutes")
     parser_find.add_argument("-m", "--monitor", action='store_true', default=False,
                         help="active monitoring")
+    parser_find.add_argument("-i", action='store_true', default=False,
+                        help="Get Digital Shadows incidents only")
+    parser_find.add_argument("-I", action='store_true', default=False,
+                        help="Get Digital Shadows intel-incidents only")
 
+    if len(sys.argv[1:]) == 0:
+        parser.print_help()
+        parser.exit()
     args = parser.parse_args()
 
-    monitor = True if 'monitor' in args and args.monitor is not None else False
-    debug = True if 'debug' in args and args.debug is not None else False
+    debug = True if 'debug' in args and args.debug else False
 
     dsapi = DigitalShadowsApi(DigitalShadows)
 
@@ -352,16 +358,19 @@ def run():
 
     if 'since' in args and args.since is not None:
         since = args.since.pop()
-        if monitor:
+        
+        if args.monitor:
             mon = monitoring("{}/ds2th.status".format(os.path.dirname(os.path.realpath(__file__))), int(since))
             mon.start()
+            
+        if (not args.i ^ args.I) or args.I:
+            intel = find_intel_incidents(dsapi, since)
+            create_thehive_alerts(TheHive, intel)
+        if (not args.i ^ args.I) or args.i:
+            incidents = find_incidents(dsapi, since)
+            create_thehive_alerts(TheHive, incidents)
 
-        intel = find_intel_incidents(dsapi, since)
-        create_thehive_alerts(TheHive, intel)
-        incidents = find_incidents(dsapi, since)
-        create_thehive_alerts(TheHive, incidents)
-
-        mon.finish() if monitor else None
+        mon.finish() if args.monitor else None
         
 if __name__ == '__main__':
     run()
