@@ -372,7 +372,7 @@ def run():
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                         help="generate a log file and and active debug logging")
     subparsers = parser.add_subparsers(help="subcommand help")
-    parser_incident = subparsers.add_parser('inc', help="specify IDs of incidents to fetch")
+    parser_incident = subparsers.add_parser('inc', help="fetch incidents or intel-incidents by ID")
     parser_incident.add_argument("-i", "--incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS incidents by ID")
     parser_incident.add_argument("-I", "--intel-incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS intel-incidents by ID")
     parser_find = subparsers.add_parser('find', help="find incidents and intel-incidents in time")
