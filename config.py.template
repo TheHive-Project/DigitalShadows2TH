@@ -16,7 +16,7 @@ TheHive = {
       'https': ''
   },
     'url':'',
-    'api':'',
+    'key':'',
     'template':''
 
 }
