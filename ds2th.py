@@ -33,11 +33,10 @@ class monitoring():
         if not os.path.isfile(self.monitoring_file):
             f = open(self.monitoring_file, 'a')
             f.close()
-            logging.debug("Creating monitoring file")
         else:
             if datetime.datetime.utcfromtimestamp((os.stat(self.monitoring_file).st_birthtime)) > \
                                 ( datetime.datetime.utcnow() - datetime.timedelta(minutes=self.freq)):
-                logging.info("ellapsed time without running: {} -> {}".format(
+                logging.debug("Monitoring: ellapsed time without running: {} -> {}".format(
                     datetime.datetime.fromtimestamp(os.stat(self.monitoring_file).st_birthtime).isoformat(),
                     datetime.datetime.now().isoformat()))
             
@@ -57,7 +56,7 @@ class monitoring():
             f.write("SUCCESS")
             f.close()
         except (IOError, OSError) as e:
-            logging.debug("Monitoring file error: {}".format(e))
+            logging.debug("Monitoring:  file error: {}".format(e))
             sys.exit(1)
 
 
@@ -89,7 +88,6 @@ def th_severity(sev):
         :type sev: string
         :return value
     """
-
     severities = {
         'NONE':1,
         'VERY_LOW':1,
@@ -125,7 +123,6 @@ def th_dataType(type):
 
 def add_alert_artefact(artefacts, dataType, data, tags, tlp):
     """
-
     :param artefacts: array
     :param dataType: string
     :param data: string
@@ -169,7 +166,6 @@ def build_alert(incident, observables, thumbnail):
     :param thumbnail: str
     :return: Alert object
     """
-
     a = Alert(title="{}".format(incident.get('title')),
                  tlp=2,
                  severity=th_severity(incident.get('severity')),
@@ -181,6 +177,7 @@ def build_alert(incident, observables, thumbnail):
                  sourceRef=str(incident.get('id')),
                  artifacts=build_observables(observables)
                  )
+    logging.debug("build_alert: alert built for DS id #{}".format(incident.get('id')))
     return a
 
 def find_incidents(dsapi, since):
@@ -195,7 +192,7 @@ def find_incidents(dsapi, since):
 
     if response.get('status') == "success":
         data = response.get('json')
-        logging.debug('DigitalShadows: {}  incidents(s) downloaded'.format(data.get('total')))
+        logging.debug('find_incidents(): {} DS incident(s) downloaded'.format(data.get('total')))
 
         for i in data.get('content'):
             if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
@@ -204,8 +201,8 @@ def find_incidents(dsapi, since):
                 thumbnail = {'thumbnail':""}
             yield build_alert(i, {}, thumbnail)
     else:
-        logging.debug("Error while fetching incident #{}: {}".format(id, response.get('json')))
-        sys.exit("Error while fetching incident #{}: {}".format(id, response.get('json')))
+        logging.debug("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
+        sys.exit("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
 
 def get_incidents(dsapi, id_list):
     """
@@ -219,14 +216,15 @@ def get_incidents(dsapi, id_list):
         response = dsapi.get_incident(id)
         if response.get('status') == 'success':
             data = response.get('json')
+            logging.debug('get_incidents(): DS incident {} fetched'.format(data.get('id')))
             if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail': ""}
             yield build_alert(data, {}, thumbnail)
         else:
-            logging.debug("Error while fetching incident #{}: {}".format(id, response.get('json')))
-            sys.exit("Error while fetching incident #{}: {}".format(id, response.get('json')))
+            logging.debug("get_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
+            sys.exit("find_incidents: Error while fetching incident #{}: {}".format(id, response.get('json')))
 
 
 def find_intel_incidents(dsapi, since):
@@ -242,10 +240,9 @@ def find_intel_incidents(dsapi, since):
 
     if response.get('status') == "success":
         data = response.get('json')
-        logging.debug('DigitalShadows: {} intel incidents(s) downloaded'.format(data.get('total')))
+        logging.debug('find_intel_incidents(): {} DS intel-incident(s) downloaded'.format(data.get('total')))
 
         for i in data.get('content'):
-            logging.debug('Intel-incident number: {}'.format(i.get('id')))
             iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
 
             if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
@@ -255,8 +252,8 @@ def find_intel_incidents(dsapi, since):
             yield build_alert(i, iocs, thumbnail)
 
     else:
-        logging.debug("Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
-        sys.exit("Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
+        logging.debug("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
+        sys.exit("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
 
 def get_intel_incidents(dsapi, id_list):
     """
@@ -269,13 +266,14 @@ def get_intel_incidents(dsapi, id_list):
         id = id_list.pop()
         response = dsapi.get_intel_incident(id)
         if response.get('status') == "success":
-            json = response.get('json')
-            if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
-                thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+            data = response.get('json')
+            logging.debug('get_incidents(): DS intel-incident {} fetched'.format(data.get('id')))
+            if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
+                thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail': ""}
-            iocs = dsapi.get_intel_incident_iocs(json.get('id')).json()
-            yield build_alert(json, iocs, thumbnail)
+            iocs = dsapi.get_intel_incident_iocs(data.get('id')).json()
+            yield build_alert(data, iocs, thumbnail)
         else:
             logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
             sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
@@ -309,8 +307,7 @@ def create_thehive_alerts(config, alerts):
     thapi = TheHiveApi(config.get('url', None), config.get('key'), config.get('password', None),
                        config.get('proxies'))
     for a in alerts:
-        thapi.create_alert(a)
-
+        response = thapi.create_alert(a)
 
 def run():
     """
@@ -346,11 +343,10 @@ def run():
     if debug:
         logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
                                 level='DEBUG', format='%(asctime)s %(levelname)s %(message)s')
-        logging.debug('logging enabled')
 
     if 'intel_incidents' in args and args.intel_incidents is not None:
-        intel_incidents = get_incident(dsapi, args.intel_incidents)
-        create_thehive_alerts(TheHive, incidents)
+        intel_incidents = get_intel_incidents(dsapi, args.intel_incidents)
+        create_thehive_alerts(TheHive, intel_incidents)
 
     if 'incidents' in args and args.incidents is not None:
         incidents = get_incidents(dsapi, args.incidents)
