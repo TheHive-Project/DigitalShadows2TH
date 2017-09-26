@@ -1,5 +1,5 @@
 # DigitalShadows2TH
-Import DigitalShadows incidents and intel-incident to TheHive
+Import DigitalShadows incidents and intel-incidents into TheHive alerts.
 
 - `DigitalShadows/api.py` : main lib to get DigitalShadows incidents and intel-incidents
 - `ds2markdown.py` : converting DigitalShadows incidents data in markdown (used in TheHive alerts)
@@ -8,12 +8,12 @@ Import DigitalShadows incidents and intel-incident to TheHive
 
 ## Prerequisite
 
-Copy `config.py.template` into `config.py` and fill all connection information needed to connect to DigitalShadows API and TheHive API.
+Copy `config.py.template` into `config.py` and fill the blanks, proxies and information (api key, url, accounts) regarding DigitalShadows API and TheHive API.
 
 ## Usage
 
-
 ```
+./ds2th.py -h
 usage: ds2th.py [-h] [-d] {inc,find} ...
 
 Get DS alerts and create alerts in TheHive
@@ -48,7 +48,7 @@ optional arguments:
 - `./ds2th.py inc -i 1234567 2345678` : fetch incidents with IDs 1234567 and 2345678
 - `./ds2th.py inc -I 1234567 2345678` : fetch intel-incidents with IDs 1234567 and 2345678
 
-### Retreive incidents and intel-incidents published during last `M` minutes
+### Retreive incidents and intel-incidents published during last `M` minutes - use the `find` command
 
 ```
 $ ./ds2th.py find -h
@@ -66,7 +66,7 @@ optional arguments:
 - `-i` and `-I` are switches you can specified if you want to fetch only incidents or intel-incidents. If none, both are retrieved.
 - `m` is a switch that creates a `ds2th.status`. Useful is you want to add the program as a cron job and monitor it. 
 
-### Examples
+### Use cases
 
 - Fetch incident #123456
 
