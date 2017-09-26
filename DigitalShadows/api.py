@@ -6,13 +6,12 @@ import requests
 import json
 
 class DigitalShadowsApi():
-    """
-		Python API for DigitalShadows
-
-		:param config
-	"""
 
     def __init__(self, config):
+        """
+        Python API for DigitalShadows
+        :param config
+        """
 
         self.url = config['url']
         self.key = config['ds_key']
@@ -20,41 +19,118 @@ class DigitalShadowsApi():
         self.proxies = config['proxies']
         self.verify = config['verify']
         self.headers = {
-            'Content-Type': 'application/vnd.polaris-v28+json',
-            'Accept': 'application/vnd.polaris-v28+json'
+            'Content-Type': 'application/vnd.polaris-v29+json',
+            'Accept': 'application/vnd.polaris-v29+json'
         }
-        self.session = requests.Session()
         self.auth = requests.auth.HTTPBasicAuth(username=self.key,
                                                 password=self.secret)
 
-    def getIncidents(self, id, fulltext='false'):
+    def response(self, status, content):
+        """
+        status: str = success/failure
+        content: JSON
+        return: JSON
+        """
+
+        return {'status':status, 'json': content}
+
+    def get_incident(self, id, fulltext='true'):
+        """
+        Fetch DigitalShadows incident
+        :param id: int
+        :param fulltext: boolean
+        :return: requests response object
+        """
         req = self.url + '/api/incidents/{}'.format(id)
         headers = self.headers
         try:
-            return self.session.get(req, headers=headers, auth=self.auth,
+            resp = requests.get(req, headers=headers, auth=self.auth,
                                     proxies=self.proxies, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def getIntelIncidents(self, id, fulltext='false'):
+    def get_intel_incident(self, id, fulltext='true'):
+        """
+        Fetch DigitalShadows Intel Incident
+        :param id: int
+        :param fulltext: boolean
+        :return: requests response
+        """
         req = self.url + '/api/intel-incidents/{}?fulltext='.format(id) + fulltext
         headers = self.headers
         try:
-            return self.session.get(req, headers=headers, auth=self.auth,
+            resp = requests.get(req, headers=headers, auth=self.auth,
                                     proxies=self.proxies, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def find_incident(self, since, property='occurred', direction='DESCENDING', detailed='true', fulltext='false'):
+
+    def find_incidents(self, since, property='published', direction='ASCENDING'):
+        """
+        Fetch DigitalShadows `published` (default property param) incidents since last `since` minutes
+        :param since: int
+        :param property: str
+        :param direction: str
+        :return: requests response
+        """
         req = self.url + '/api/incidents/find'
         headers = self.headers
-        payload = {'since': since , 'sort.property': property, 'sort.direction':direction, 'detailed': detailed, 'fulltext':fulltext}
+        payload = json.dumps({
+          "filter": {
+            "severities": [],
+            "tags": [],
+            "tagOperator": "AND",
+            "dateRange": since,
+            "dateRangeField": property,
+            "types": [],
+            "withFeedback": True,
+            "withoutFeedback": True,
+            "alerted": False,
+            "withTakedown": True,
+            "withoutTakedown": True,
+            "withContentRemoved": True,
+            "withoutContentRemoved": True,
+            "statuses": [
+              "UNREAD",
+              "READ"
+            ],
+            "repostedCredentials": []
+          },
+          "sort": {
+            "property": "date",
+            "direction": direction
+          },
+          "pagination": {
+            "size": 50,
+            "offset": 0
+          },
+          "subscribed": True
+        })
         try:
-            return self.session.get(req, headers=headers, auth=self.auth, proxies=self.proxies, params=payload, verify=self.verify)
+            resp =  requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
-    def find_intel_incident(self, since, property='verified', direction='ASCENDING'):
+    def find_intel_incidents(self, since, property='verified', direction='ASCENDING'):
+        """
+        Fetch DigitalShadows `published` (default property param) intel-incidents since last `since` minutes
+        :param since: int
+        :param property: str
+        :param direction: str
+        :return: requests response
+        """
         req = self.url + '/api/intel-incidents/find'
         headers = self.headers
 
@@ -81,32 +157,61 @@ class DigitalShadowsApi():
 
 
         try:
-            return self.session.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            resp = requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies, data=payload, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
         except requests.exceptions.RequestException as e:
             sys.exit("Error: {}".format(e))
 
+
     def get_intel_incident_iocs(self, id):
+        """
+        Fetch DigitalShadows IOCS for intel-incidents id
+        :param id: int
+        :return: requests response
+        """
         req = "{}/api/intel-incidents/{}/iocs".format(self.url, id)
         headers = self.headers
-        payload = {
+        payload = json.dumps({
             "filter": {},
             "sort": {
                 "property": "value",
                 "direction": "ASCENDING"
             }
-        }
+        })
         try:
-            return self.session.post(req, headers=headers, auth=self.auth, proxies=self.proxies,
-                                     data=json.dumps(payload), verify=self.verify)
+            return requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                     data=payload, verify=self.verify)
         except requests.exceptions.RequestException as e:
                 sys.exit("Error: {}".format(e))
 
 
-    def get_intel_incident_thumbnail(self, id):
+    def get_screenshot(self, id):
+        """
+        Fetch screenshot for incident or intel-incident id
+        :param id: int
+        :return: requests response
+        """
+        req = "{}/api/external/downloads/{}".format(self.url, id)
+        headers = self.headers
+        try:
+            return requests.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                 verify=self.verify)
+        except requests.exceptions.RequestException as e:
+                sys.exit("Error: {}".format(e))
+
+    def get_thumbnail(self, id):
+        """
+        Fetch thumbnail for incident or intel-incident id
+        :param id: int
+        :return: requests response
+        """
         req = "{}/api/thumbnails/{}".format(self.url, id)
         headers = self.headers
         try:
-            return self.session.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
+            return requests.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
                                  verify=self.verify)
         except requests.exceptions.RequestException as e:
                 sys.exit("Error: {}".format(e))
