@@ -4,7 +4,7 @@
 import os
 import sys
 import getopt
-import getpass
+import argparse
 import datetime
 from io import BytesIO
 import base64
@@ -19,8 +19,49 @@ from config import DigitalShadows, TheHive
 from ds2markdown import ds2markdown
 
 
-def add_tags(tags, content):
+class monitoring():
+    
+    def __init__(self, file, freq):
+        self.monitoring_file = file
+        self.freq = freq
 
+    def start(self):
+        """
+        delete and create a new monitoring_file
+        :return: 
+        """
+        if not os.path.isfile(self.monitoring_file):
+            f = open(self.monitoring_file, 'a')
+            f.close()
+            logging.debug("Creating monitoring file")
+        else:
+            if datetime.datetime.utcfromtimestamp((os.stat(self.monitoring_file).st_birthtime)) > \
+                                ( datetime.datetime.utcnow() - datetime.timedelta(minutes=self.freq)):
+                logging.info("ellapsed time without running: {} -> {}".format(
+                    datetime.datetime.fromtimestamp(os.stat(self.monitoring_file).st_birthtime).isoformat(),
+                    datetime.datetime.now().isoformat()))
+            
+            os.remove(self.monitoring_file)
+            f = open(self.monitoring_file,'a')
+            f.close()
+
+
+    def finish(self):
+        """
+        Append 'SUCCESS' in monitoring_file
+        :return:
+        """
+        
+        try:
+            f = open(self.monitoring_file, 'a')
+            f.write("SUCCESS")
+            f.close()
+        except (IOError, OSError) as e:
+            logging.debug("Monitoring file error: {}".format(e))
+            sys.exit(1)
+
+
+def add_tags(tags, content):
     """
         add tag to tags
 
@@ -41,11 +82,12 @@ def th_alert_tags(incident):
     return tags
 
 def th_severity(sev):
-
     """
         convert DigitalShadows severity in TH severity
 
-        :sev string
+        :param sev: string
+        :type sev: string
+        :return value
     """
 
     severities = {
@@ -141,7 +183,7 @@ def build_alert(incident, observables, thumbnail):
                  )
     return a
 
-def get_incidents(dsapi, since):
+def find_incidents(dsapi, since):
     """
     :param dsapi: request to DigitalShadows
     :param since: int, number of minutes, period of time
@@ -165,30 +207,33 @@ def get_incidents(dsapi, since):
         logging.debug("Error while fetching incident #{}: {}".format(id, response.get('json')))
         sys.exit("Error while fetching incident #{}: {}".format(id, response.get('json')))
 
-def get_incident(dsapi, id):
+def get_incidents(dsapi, id_list):
     """
     :param dsapi: DigitalShadows api init
     :param id: incident id
+    :type id: list
     :return: TheHive alert
     """
-    response = dsapi.get_incident(id)
-    if response.get('status') == 'success':
-        data = response.get('json')
-        if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
-            thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
+    while id_list:
+        id = id_list.pop()
+        response = dsapi.get_incident(id)
+        if response.get('status') == 'success':
+            data = response.get('json')
+            if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
+                thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
+            else:
+                thumbnail = {'thumbnail': ""}
+            yield build_alert(data, {}, thumbnail)
         else:
-            thumbnail = {'thumbnail': ""}
-        yield build_alert(data, {}, thumbnail)
-    else:
-        logging.debug("Error while fetching incident #{}: {}".format(id, response.get('json')))
-        sys.exit("Error while fetching incident #{}: {}".format(id, response.get('json')))
+            logging.debug("Error while fetching incident #{}: {}".format(id, response.get('json')))
+            sys.exit("Error while fetching incident #{}: {}".format(id, response.get('json')))
 
 
-def get_intel_incidents(dsapi, since):
+def find_intel_incidents(dsapi, since):
     """
-
     :param dsapi: request to DigitalShadows
-    :param since: int, number of minutes, period of time
+    :param since: number of minutes, period of time
+    :type since: int
     :return: alert
     """
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
@@ -213,24 +258,27 @@ def get_intel_incidents(dsapi, since):
         logging.debug("Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
         sys.exit("Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
 
-def get_intel_incident(dsapi, id):
+def get_intel_incidents(dsapi, id_list):
     """
     :param dsapi: DigitalShadows api init
     :param id: intel-incident id
+    :type id: list
     :return: Thehive alert
     """
-    response = dsapi.get_intel_incident(id)
-    if response.get('status') == "success":
-        json = response.get('json')
-        if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
-            thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+    while id_list:  
+        id = id_list.pop()
+        response = dsapi.get_intel_incident(id)
+        if response.get('status') == "success":
+            json = response.get('json')
+            if json.get('entitySummary') and json.get('entitySummary').get('screenshotThumbnailId'):
+                thumbnail = build_thumbnail(dsapi, json.get('entitySummary').get('screenshotThumbnailId'))
+            else:
+                thumbnail = {'thumbnail': ""}
+            iocs = dsapi.get_intel_incident_iocs(json.get('id')).json()
+            yield build_alert(json, iocs, thumbnail)
         else:
-            thumbnail = {'thumbnail': ""}
-        iocs = dsapi.get_intel_incident_iocs(json.get('id')).json()
-        yield build_alert(json, iocs, thumbnail)
-    else:
-        logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
-        sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
+            logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
+            sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
 
 
 def build_thumbnail(dsapi, thumbnail_id):
@@ -264,63 +312,56 @@ def create_thehive_alerts(config, alerts):
         thapi.create_alert(a)
 
 
-def run(argv):
-
+def run():
     """
         Download DigitalShadows incident and create a new Case in TheHive
         :argv (options, log, since, intel, incident)
     """
 
+    parser = argparse.ArgumentParser(description="Get DS alerts and create alerts in TheHive")
+    parser.add_argument("-d", "--debug", action='store_true', default=False,
+                        help="generate a log file and and active debug logging")
+    subparsers = parser.add_subparsers(help="subcommand help")
+    parser_incident = subparsers.add_parser('inc', help="specify incidents to fetch")
+    parser_incident.add_argument("-i", "--incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS incidents by ID")
+    parser_incident.add_argument("-I", "--intel-incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS intel-incidents by ID")
+    parser_find = subparsers.add_parser('find', help="find subcommand help")
+    parser_find.add_argument("-s", "--since", metavar="M", nargs=1, type=int, help="Get all incident since last [M] minutes")
+    parser_find.add_argument("-m", "--monitor", action='store_true', default=False,
+                        help="active monitoring")
 
-    # get options
-    try:
-        opts, args = getopt.getopt(argv, 'lhs:I:i:',["log=","since=", "intel=", "incident="])
-    except getopt.GetoptError:
-        print(__file__ + " -s <time>")
-        sys.exit(2)
+    args = parser.parse_args()
 
-    for opt, arg in opts:
-        if opt in ('-l', '--log'):
-            logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
-                                level=arg, format='%(asctime)s %(levelname)s %(message)s')
-            logging.debug('logging enabled')
+    monitor = True if 'monitor' in args and args.monitor is not None else False
+    debug = True if 'debug' in args and args.debug is not None else False
 
-    for opt,arg in opts:
-        if opt == '-h':
-            print(__file__ + " -s <time in minutes>")
-            sys.exit()
-        elif opt in ('-s','--since'):
-            since = arg
-            logging.info('ds2th.py started')
-            # init DigitalShadows api
-            dsapi = DigitalShadowsApi(DigitalShadows)
-            # get Intel incidents and create alert
-            intel = get_intel_incidents(dsapi, since)
-            create_thehive_alerts(TheHive, intel)
-            # get incidents and create alerts
-            incidents = get_incidents(dsapi, since)
-            create_thehive_alerts(TheHive, incidents)
+    dsapi = DigitalShadowsApi(DigitalShadows)
 
-        elif opt in ('-I', '--intel'):
-            # init DigitalShadows api
-            dsapi = DigitalShadowsApi(DigitalShadows)
-            # Get Intel-incident from id
-            alerts = get_intel_incident(dsapi, int(arg))
-            # create alerts
-            create_thehive_alerts(TheHive, alerts)
+    if debug:
+        logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
+                                level='DEBUG', format='%(asctime)s %(levelname)s %(message)s')
+        logging.debug('logging enabled')
 
-        elif opt in ('-i', '--incident'):
-            # init DigitalShadows api
-            dsapi = DigitalShadowsApi(DigitalShadows)
-            # Get incident from id
-            alerts = get_incident(dsapi, int(arg))
-            # create alerts
-            create_thehive_alerts(TheHive, alerts)
+    if 'intel_incidents' in args and args.intel_incidents is not None:
+        intel_incidents = get_incident(dsapi, args.intel_incidents)
+        create_thehive_alerts(TheHive, incidents)
 
+    if 'incidents' in args and args.incidents is not None:
+        incidents = get_incidents(dsapi, args.incidents)
+        create_thehive_alerts(TheHive, incidents)
 
+    if 'since' in args and args.since is not None:
+        since = args.since.pop()
+        if monitor:
+            mon = monitoring("{}/ds2th.status".format(os.path.dirname(os.path.realpath(__file__))), int(since))
+            mon.start()
+
+        intel = find_intel_incidents(dsapi, since)
+        create_thehive_alerts(TheHive, intel)
+        incidents = find_incidents(dsapi, since)
+        create_thehive_alerts(TheHive, incidents)
+
+        mon.finish() if monitor else None
+        
 if __name__ == '__main__':
-    if len(sys.argv[1:]) > 0:
-        run(sys.argv[1:])
-    else:
-        print(__file__ + " -s <since last time in minutes>")
-        sys.exit(2)
+    run()
