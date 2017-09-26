@@ -8,9 +8,11 @@ import json
 class DigitalShadowsApi():
 
     def __init__(self, config):
+        
         """
         Python API for DigitalShadows
-        :param config
+        :param config: Digital Shadows configuration from config.py
+        :type config: dict
         """
 
         self.url = config['url']
@@ -26,20 +28,29 @@ class DigitalShadowsApi():
                                                 password=self.secret)
 
     def response(self, status, content):
+        
         """
-        status: str = success/failure
-        content: JSON
-        return: JSON
-        """
+        :param status: str = success/failure
+        :type status: string
+        :paran content: data to return
+        :type content: dict
+        :return: 
+        :rtype: dict
 
-        return {'status':status, 'json': content}
+        """
+        
+        return {'status':status, 'data': content}
 
     def get_incident(self, id, fulltext='true'):
+        
         """
         Fetch DigitalShadows incident
-        :param id: int
-        :param fulltext: boolean
-        :return: requests response object
+        :param id: incident id
+        :type id: int
+        :type fulltext: text
+        :return: response 
+        :rtype: requests.get
+        
         """
         req = self.url + '/api/incidents/{}'.format(id)
         headers = self.headers
@@ -54,12 +65,16 @@ class DigitalShadowsApi():
             sys.exit("Error: {}".format(e))
 
     def get_intel_incident(self, id, fulltext='true'):
+        
         """
         Fetch DigitalShadows Intel Incident
-        :param id: int
-        :param fulltext: boolean
+        :param id: intel-incident
+        :type id: string
+        :type fulltext: boolean
         :return: requests response
+        :rtype: requests.get
         """
+
         req = self.url + '/api/intel-incidents/{}?fulltext='.format(id) + fulltext
         headers = self.headers
         try:
@@ -74,13 +89,15 @@ class DigitalShadowsApi():
 
 
     def find_incidents(self, since, property='published', direction='ASCENDING'):
+        
         """
         Fetch DigitalShadows `published` (default property param) incidents since last `since` minutes
-        :param since: int
-        :param property: str
-        :param direction: str
-        :return: requests response
+        :type since: int
+        :type property: str
+        :type direction: str
+        :rtype: request.post
         """
+
         req = self.url + '/api/incidents/find'
         headers = self.headers
         payload = json.dumps({
@@ -124,13 +141,15 @@ class DigitalShadowsApi():
             sys.exit("Error: {}".format(e))
 
     def find_intel_incidents(self, since, property='verified', direction='ASCENDING'):
+        
         """
         Fetch DigitalShadows `published` (default property param) intel-incidents since last `since` minutes
-        :param since: int
-        :param property: str
-        :param direction: str
-        :return: requests response
+        :type since: int
+        :type property: str
+        :type direction: str
+        :rtype: requests response
         """
+        
         req = self.url + '/api/intel-incidents/find'
         headers = self.headers
 
@@ -167,11 +186,13 @@ class DigitalShadowsApi():
 
 
     def get_intel_incident_iocs(self, id):
+        
         """
         Fetch DigitalShadows IOCS for intel-incidents id
-        :param id: int
-        :return: requests response
+        :type id: int
+        :rtype: requests response
         """
+        
         req = "{}/api/intel-incidents/{}/iocs".format(self.url, id)
         headers = self.headers
         payload = json.dumps({
@@ -189,11 +210,13 @@ class DigitalShadowsApi():
 
 
     def get_screenshot(self, id):
+        
         """
         Fetch screenshot for incident or intel-incident id
-        :param id: int
-        :return: requests response
+        :type id: int
+        :rtype: requests response
         """
+
         req = "{}/api/external/downloads/{}".format(self.url, id)
         headers = self.headers
         try:
@@ -203,11 +226,13 @@ class DigitalShadowsApi():
                 sys.exit("Error: {}".format(e))
 
     def get_thumbnail(self, id):
+        
         """
         Fetch thumbnail for incident or intel-incident id
-        :param id: int
-        :return: requests response
+        :type id: int
+        :rtype: requests response
         """
+
         req = "{}/api/thumbnails/{}".format(self.url, id)
         headers = self.headers
         try:

@@ -26,10 +26,11 @@ class monitoring():
         self.freq = freq
 
     def start(self):
+        
         """
         delete and create a new monitoring_file
-        :return: 
         """
+
         if not os.path.isfile(self.monitoring_file):
             f = open(self.monitoring_file, 'a')
             f.close()
@@ -46,9 +47,9 @@ class monitoring():
 
 
     def finish(self):
+        
         """
         Append 'SUCCESS' in monitoring_file
-        :return:
         """
         
         try:
@@ -61,11 +62,14 @@ class monitoring():
 
 
 def add_tags(tags, content):
+    
     """
-        add tag to tags
+    add tag to tags
 
-        :param tags is list
-        :param content is list
+    :param tags: existing tags
+    :type tags: list
+    :param content: string, mainly like taxonomy
+    :type content: string
     """
     t = tags
     for newtag in content:
@@ -73,6 +77,15 @@ def add_tags(tags, content):
     return t
 
 def th_alert_tags(incident):
+    
+    """
+    Convert DS incident tags into TH tags
+    :param incident: DS incident
+    :type incident: dict
+    :return: TH tags
+    :rtype:  list
+    """
+
     tags = []
     add_tags(tags, ["id={}".format(incident.get('id')), "type={}".format(incident.get('type'))])
     for t in incident.get('tags'):
@@ -81,12 +94,14 @@ def th_alert_tags(incident):
     return tags
 
 def th_severity(sev):
+    
     """
-        convert DigitalShadows severity in TH severity
+    convert DigitalShadows severity in TH severity
 
-        :param sev: string
-        :type sev: string
-        :return value
+    :param sev: DS severity
+    :type sev: string
+    :return TH severity
+    :rtype: int
     """
     severities = {
         'NONE':1,
@@ -99,11 +114,15 @@ def th_severity(sev):
     return severities[sev]
 
 def th_dataType(type):
+    
     """
     convert DigitalShadows IOC type to TH dataType
-    :param type: str
-    :return: str
+    :param type: DS type
+    :type type: str
+    :return: TH dataType
+    :rtype: str
     """
+   
     types = {
         'IP':'ip',
         'HOST': 'domain',
@@ -122,13 +141,14 @@ def th_dataType(type):
         return "other"
 
 def add_alert_artefact(artefacts, dataType, data, tags, tlp):
+    
     """
-    :param artefacts: array
-    :param dataType: string
-    :param data: string
-    :param tags: array
-    :param tlp: int
-    :return: array
+    :type artefacts: array
+    :type dataType: string
+    :type data: string
+    :type tags: array
+    :type tlp: int
+    :rtype: array
     """
 
     return artefacts.append(AlertArtifact(tags=tags,
@@ -140,6 +160,15 @@ def add_alert_artefact(artefacts, dataType, data, tags, tlp):
 
 
 def build_observables(observables):
+    
+    """
+    Convert DS observables into TheHive observables
+    :param observables: observables from DS
+    :type observables: dict
+    :return: AlertArtifact
+    :rtype: thehive4py.models AlertArtifact
+    """
+
     artefacts = []
     if observables.get('total', 0) > 0:
 
@@ -158,14 +187,19 @@ def build_observables(observables):
 
 
 def build_alert(incident, observables, thumbnail):
+    
     """
     Convert DigitalShadows alert into a TheHive Alert
 
-    :param incident: dict
-    :param observables: dict
-    :param thumbnail: str
-    :return: Alert object
+    :param incident: Incident from DS
+    :type incident: dict
+    :param observables: observables from DS
+    :type observables: dict
+    :type thumbnail: str
+    :return: Thehive alert
+    :rtype: thehive4py.models Alerts
     """
+
     a = Alert(title="{}".format(incident.get('title')),
                  tlp=2,
                  severity=th_severity(incident.get('severity')),
@@ -181,17 +215,20 @@ def build_alert(incident, observables, thumbnail):
     return a
 
 def find_incidents(dsapi, since):
+    
     """
-    :param dsapi: request to DigitalShadows
-    :param since: int, number of minutes, period of time
-    :return: list of TheHive alerts
+    :param dsapi: DigitalShadows.api.DigitalShadowsApi
+    :param since: number of minutes
+    :type since: int
+    :return: list of  thehive4py.models Alerts
     """
+
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
     response = dsapi.find_incidents(s)
 
     if response.get('status') == "success":
-        data = response.get('json')
+        data = response.get('data')
         logging.debug('find_incidents(): {} DS incident(s) downloaded'.format(data.get('total')))
 
         for i in data.get('content'):
@@ -201,21 +238,24 @@ def find_incidents(dsapi, since):
                 thumbnail = {'thumbnail':""}
             yield build_alert(i, {}, thumbnail)
     else:
-        logging.debug("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
-        sys.exit("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
+        logging.debug("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
+        sys.exit("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
 
 def get_incidents(dsapi, id_list):
+    
     """
-    :param dsapi: DigitalShadows api init
-    :param id: incident id
-    :type id: list
+    :type dsapi: DigitalShadows.api.DigitalShadowsApi
+    :param id_list: list of incident id
+    :type id_list: list
     :return: TheHive alert
+    :rtype: thehive4py.models Alert
+    
     """
     while id_list:
         id = id_list.pop()
         response = dsapi.get_incident(id)
         if response.get('status') == 'success':
-            data = response.get('json')
+            data = response.get('data')
             logging.debug('get_incidents(): DS incident {} fetched'.format(data.get('id')))
             if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
@@ -223,23 +263,26 @@ def get_incidents(dsapi, id_list):
                 thumbnail = {'thumbnail': ""}
             yield build_alert(data, {}, thumbnail)
         else:
-            logging.debug("get_incidents(): Error while fetching incident #{}: {}".format(id, response.get('json')))
-            sys.exit("find_incidents: Error while fetching incident #{}: {}".format(id, response.get('json')))
+            logging.debug("get_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
+            sys.exit("find_incidents: Error while fetching incident #{}: {}".format(id, response.get('data')))
 
 
 def find_intel_incidents(dsapi, since):
+    
     """
-    :param dsapi: request to DigitalShadows
+    :type dsapi: DigitalShadows.api.DigitalShadowsApi
     :param since: number of minutes, period of time
     :type since: int
     :return: alert
+    :rtype: thehive4py.models Alert
     """
+
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
     response = dsapi.find_intel_incidents(s)
 
     if response.get('status') == "success":
-        data = response.get('json')
+        data = response.get('data')
         logging.debug('find_intel_incidents(): {} DS intel-incident(s) downloaded'.format(data.get('total')))
 
         for i in data.get('content'):
@@ -252,21 +295,25 @@ def find_intel_incidents(dsapi, since):
             yield build_alert(i, iocs, thumbnail)
 
     else:
-        logging.debug("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
-        sys.exit("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('json')))
+        logging.debug("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('data')))
+        sys.exit("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('data')))
 
 def get_intel_incidents(dsapi, id_list):
+    
     """
     :param dsapi: DigitalShadows api init
+    :type dsapi: 
     :param id: intel-incident id
     :type id: list
     :return: Thehive alert
+    :rtype: thehive4py.models Alert
     """
+
     while id_list:  
         id = id_list.pop()
         response = dsapi.get_intel_incident(id)
         if response.get('status') == "success":
-            data = response.get('json')
+            data = response.get('data')
             logging.debug('get_incidents(): DS intel-incident {} fetched'.format(data.get('id')))
             if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
@@ -275,18 +322,22 @@ def get_intel_incidents(dsapi, id_list):
             iocs = dsapi.get_intel_incident_iocs(data.get('id')).json()
             yield build_alert(data, iocs, thumbnail)
         else:
-            logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
-            sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('json')))
+            logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('data')))
+            sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('data')))
 
 
 def build_thumbnail(dsapi, thumbnail_id):
+    
     """
     Get Intel Incident screenshot thumbnail
-    :param dsapi:
+    :param dsapi: 
+    :type dsapi: DigitalShadows.api.DigitalShadowsApi
     :param thumbnail_id:
+    :type thumbnail_id: string 
     :return: dict with base64 pict ready to be added in markdown
     """
-    response = DigitalShadowsApi.get_thumbnail(dsapi,thumbnail_id)
+
+    response = dsapi.get_thumbnail(thumbnail_id)
     if response.status_code == 200:
         with BytesIO(response.content) as bytes:
             encoded = base64.b64encode(bytes.read())
@@ -297,22 +348,24 @@ def build_thumbnail(dsapi, thumbnail_id):
         return {"thumbnail": ""}
 
 def create_thehive_alerts(config, alerts):
+    
     """
-    :param TheHive: TheHive config
+    :param config: TheHive config
+    :type config: dict
     :param alerts: List of alerts
-    :return:
+    :type alerts: list
+    :return: create TH alert
     """
-    # if len(alerts) > 0:
 
     thapi = TheHiveApi(config.get('url', None), config.get('key'), config.get('password', None),
                        config.get('proxies'))
     for a in alerts:
-        response = thapi.create_alert(a)
+        thapi.create_alert(a)
 
 def run():
+    
     """
-        Download DigitalShadows incident and create a new Case in TheHive
-        :argv (options, log, since, intel, incident)
+        Downloads DigitalShadows incident and creates a new Case in TheHive
     """
 
     parser = argparse.ArgumentParser(description="Get DS alerts and create alerts in TheHive")
@@ -339,7 +392,6 @@ def run():
     debug = True if 'debug' in args and args.debug else False
 
     dsapi = DigitalShadowsApi(DigitalShadows)
-
     if debug:
         logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
                                 level='DEBUG', format='%(asctime)s %(levelname)s %(message)s')
