@@ -29,9 +29,9 @@ class monitoring():
         """
         touch status file when successfully terminated
         """
-        f = open(file, 'a')
-        os.utime(file, None)
-        f.close()
+        if os.path.exists(file):
+            os.remove(filename)
+        open(file, 'a').close()
 
 def add_tags(tags, content):
     
