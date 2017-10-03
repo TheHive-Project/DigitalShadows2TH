@@ -390,11 +390,12 @@ def run():
     parser_find = subparsers.add_parser('find',
                                         help="find incidents and \
                                         intel-incidents in time")
-    parser_find.add_argument("-s", "--since",
+    parser_find.add_argument("-l", "--last",
                              metavar="M",
                              nargs=1,
                              type=int,required=True,
-                             help="Get all incident since last [M] minutes")
+                             help="Get all incident published during\
+                              last [M] minutes")
     parser_find.add_argument("-m", "--monitor",
                              action='store_true',
                              default=False,
