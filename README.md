@@ -108,4 +108,7 @@ This will create a `ds2th.log` in the folder of the main program.
 */10    *   *   *   * /path/to/ds2th.py find -s 15 -m
 ```
 
-The first time, it will create an empty `ds2th.status` in the folder of the main program. The Program adds `SUCCESS` when it terminates successfully. The birth date of this file is renewed at the start of the next execution, and emptied.
+The monitoring switch makes the program "touch" a file named
+`ds2th.status` once it has successfully finished. To monitor, just check
+the modification date of this file and compare it to the frequency used
+in your crontab.
