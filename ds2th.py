@@ -21,45 +21,17 @@ from ds2markdown import ds2markdown
 
 class monitoring():
     
-    def __init__(self, file, freq):
+    def __init__(self, file):
         self.monitoring_file = file
-        self.freq = freq
 
-    def start(self):
+    def touch(self):
         
         """
-        delete and create a new monitoring_file
+        touch status file when successfully terminated
         """
-
-        if not os.path.isfile(self.monitoring_file):
-            f = open(self.monitoring_file, 'a')
-            f.close()
-        else:
-            if datetime.datetime.utcfromtimestamp((os.stat(self.monitoring_file).st_birthtime)) > \
-                                ( datetime.datetime.utcnow() - datetime.timedelta(minutes=self.freq)):
-                logging.debug("Monitoring: ellapsed time without running: {} -> {}".format(
-                    datetime.datetime.fromtimestamp(os.stat(self.monitoring_file).st_birthtime).isoformat(),
-                    datetime.datetime.now().isoformat()))
-            
-            os.remove(self.monitoring_file)
-            f = open(self.monitoring_file,'a')
-            f.close()
-
-
-    def finish(self):
-        
-        """
-        Append 'SUCCESS' in monitoring_file
-        """
-        
-        try:
-            f = open(self.monitoring_file, 'a')
-            f.write("SUCCESS")
-            f.close()
-        except (IOError, OSError) as e:
-            logging.debug("Monitoring:  file error: {}".format(e))
-            sys.exit(1)
-
+        if os.path.exists(self.monitoring_file):
+            os.remove(fself.monitoring_fileile)
+        open(self.monitoring_file, 'a').close()
 
 def add_tags(tags, content):
     
@@ -176,7 +148,8 @@ def build_observables(observables):
             a = AlertArtifact(
                 data=ioc.get('value'),
                 dataType=th_dataType(ioc.get('type')),
-                message="Observable from DigitalShadows. Source: {}".format(ioc.get('source')),
+                message="Observable from DigitalShadows. \
+                    Source: {}".format(ioc.get('source')),
                 tlp=2,
                 tags=["src:DigitalShadows"]
             )
@@ -221,6 +194,7 @@ def find_incidents(dsapi, since):
     :param since: number of minutes
     :type since: int
     :return: list of  thehive4py.models Alerts
+    :rtype: array
     """
 
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
@@ -246,7 +220,7 @@ def get_incidents(dsapi, id_list):
     """
     :type dsapi: DigitalShadows.api.DigitalShadowsApi
     :param id_list: list of incident id
-    :type id_list: list
+    :type id_list: array
     :return: TheHive alert
     :rtype: thehive4py.models Alert
     
@@ -368,57 +342,90 @@ def run():
         Downloads DigitalShadows incident and creates a new Case in TheHive
     """
 
-    parser = argparse.ArgumentParser(description="Get DS alerts and create alerts in TheHive")
-    parser.add_argument("-d", "--debug", action='store_true', default=False,
-                        help="generate a log file and and active debug logging")
+
+    def find(args):
+        if 'last' in args and args.last is not None:
+            last = args.last.pop()
+            
+        if (not args.i ^ args.I) or args.I:
+            intel = find_intel_incidents(dsapi, last)
+            create_thehive_alerts(TheHive, intel)
+        if (not args.i ^ args.I) or args.i:
+            incidents = find_incidents(dsapi, last)
+            create_thehive_alerts(TheHive, incidents)
+        if args.monitor:
+            mon = monitoring("{}/ds2th.status".format(
+                os.path.dirname(os.path.realpath(__file__))))
+            mon.touch()
+ 
+    def inc(args):
+        if 'intel_incidents' in args and args.intel_incidents is not None:
+            intel_incidents = get_intel_incidents(dsapi, args.intel_incidents)
+            create_thehive_alerts(TheHive, intel_incidents)
+
+        if 'incidents' in args and args.incidents is not None:
+            incidents = get_incidents(dsapi, args.incidents)
+            create_thehive_alerts(TheHive, incidents)
+
+    parser = argparse.ArgumentParser(
+        description="Get DS alerts and create alerts in TheHive")
+    parser.add_argument("-d", "--debug",
+                        action='store_true',
+                        default=False,
+                        help="generate a log file and active debug logging")
     subparsers = parser.add_subparsers(help="subcommand help")
-    parser_incident = subparsers.add_parser('inc', help="fetch incidents or intel-incidents by ID")
-    parser_incident.add_argument("-i", "--incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS incidents by ID")
-    parser_incident.add_argument("-I", "--intel-incidents", metavar="ID", action='store', type=int, nargs='+', help="Get DS intel-incidents by ID")
-    parser_find = subparsers.add_parser('find', help="find incidents and intel-incidents in time")
-    parser_find.add_argument("-s", "--since", metavar="M", nargs=1, type=int,required=True, help="Get all incident since last [M] minutes")
-    parser_find.add_argument("-m", "--monitor", action='store_true', default=False,
-                        help="active monitoring")
-    parser_find.add_argument("-i", action='store_true', default=False,
-                        help="Get Digital Shadows incidents only")
-    parser_find.add_argument("-I", action='store_true', default=False,
-                        help="Get Digital Shadows intel-incidents only")
+    
+    parser_incident = subparsers.add_parser('inc',
+                                            help="fetch incidents or \
+                                            intel-incidents by ID")
+    parser_incident.add_argument("-i", "--incidents",
+                                 metavar="ID",
+                                 action='store',
+                                 type=int,
+                                 nargs='+',
+                                 help="Get DS incidents by ID")
+    parser_incident.add_argument("-I", "--intel-incidents",
+                                 metavar="ID",
+                                 action='store',
+                                 type=int, nargs='+',
+                                 help="Get DS intel-incidents by ID")
+    parser_incident.set_defaults(func=inc)
+
+    parser_find = subparsers.add_parser('find',
+                                        help="find incidents and \
+                                        intel-incidents in time")
+    parser_find.add_argument("-l", "--last",
+                             metavar="M",
+                             nargs=1,
+                             type=int,required=True,
+                             help="Get all incident published during\
+                              last [M] minutes")
+    parser_find.add_argument("-m", "--monitor",
+                             action='store_true',
+                             default=False,
+                             help="active monitoring")
+    parser_find.add_argument("-i",
+                             action='store_true',
+                             default=False,
+                             help="Get Digital Shadows incidents only")
+    parser_find.add_argument("-I",
+                             action='store_true',
+                             default=False,
+                             help="Get Digital Shadows intel-incidents only")
+    parser_find.set_defaults(func=find)
 
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         parser.exit()
     args = parser.parse_args()
-
-    debug = True if 'debug' in args and args.debug else False
-
+   
+    if args.debug:
+        logging.basicConfig(filename='{}/ds2th.log'.format(
+            os.path.dirname(os.path.realpath(__file__))),
+                            level='DEBUG',
+                            format='%(asctime)s %(levelname)s %(message)s')
     dsapi = DigitalShadowsApi(DigitalShadows)
-    if debug:
-        logging.basicConfig(filename='{}/ds2th.log'.format(os.path.dirname(os.path.realpath(__file__))),
-                                level='DEBUG', format='%(asctime)s %(levelname)s %(message)s')
+    args.func(args)
 
-    if 'intel_incidents' in args and args.intel_incidents is not None:
-        intel_incidents = get_intel_incidents(dsapi, args.intel_incidents)
-        create_thehive_alerts(TheHive, intel_incidents)
-
-    if 'incidents' in args and args.incidents is not None:
-        incidents = get_incidents(dsapi, args.incidents)
-        create_thehive_alerts(TheHive, incidents)
-
-    if 'since' in args and args.since is not None:
-        since = args.since.pop()
-        
-        if args.monitor:
-            mon = monitoring("{}/ds2th.status".format(os.path.dirname(os.path.realpath(__file__))), int(since))
-            mon.start()
-            
-        if (not args.i ^ args.I) or args.I:
-            intel = find_intel_incidents(dsapi, since)
-            create_thehive_alerts(TheHive, intel)
-        if (not args.i ^ args.I) or args.i:
-            incidents = find_incidents(dsapi, since)
-            create_thehive_alerts(TheHive, incidents)
-
-        mon.finish() if args.monitor else None
-        
 if __name__ == '__main__':
     run()

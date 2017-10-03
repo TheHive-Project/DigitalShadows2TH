@@ -51,15 +51,16 @@ optional arguments:
 ### Retreive incidents and intel-incidents published during last `M` minutes - use the `find` command
 
 ```
-$ ./ds2th.py find -h
-usage: ds2th.py find [-h] -s M [-m] [-i] [-I]
+./ds2th.py find -h
+usage: ds2th.py find [-h] -l M [-m] [-i] [-I]
 
 optional arguments:
-  -h, --help       show this help message and exit
-  -s M, --since M  Get all incident since last [M] minutes
-  -m, --monitor    active monitoring
-  -i               Get Digital Shadows incidents only
-  -I               Get Digital Shadows intel-incidents only
+  -h, --help      show this help message and exit
+  -l M, --last M  Get all incident published during last [M] minutes
+  -m, --monitor   active monitoring
+  -i              Get Digital Shadows incidents only
+  -I              Get Digital Shadows intel-incidents only
+
 ```
 
 - `./ds2th.py find -s 20` retrieves incidents and intel-incidents published during last 20 minutes
@@ -89,13 +90,13 @@ $ ./ds2th.py inc -I 123456 -i 234567
 - Add a cron job and check for new published incidents every 10 min
 
 ```
-*/10    *   *   *   * /path/to/ds2th.py find -s 15
+*/10    *   *   *   * /path/to/ds2th.py find -l 15
 ```
 
 - Enable logging
 
 ```
-*/10    *   *   *   * /path/to/ds2th.py -d find -s 15
+*/10    *   *   *   * /path/to/ds2th.py -d find -l 15
 ```
 
 This will create a `ds2th.log` in the folder of the main program.
@@ -105,7 +106,10 @@ This will create a `ds2th.log` in the folder of the main program.
 - Monitor the feeder
 
 ```
-*/10    *   *   *   * /path/to/ds2th.py find -s 15 -m
+*/10    *   *   *   * /path/to/ds2th.py find -l 15 -m
 ```
 
-The first time, it will create an empty `ds2th.status` in the folder of the main program. The Program adds `SUCCESS` when it terminates successfully. The birth date of this file is renewed at the start of the next execution, and emptied.
+The monitoring switch makes the program "touch" a file named
+`ds2th.status` once it has successfully finished. To monitor, just check
+the modification date of this file and compare it to the frequency used
+in your crontab.
