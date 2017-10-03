@@ -30,7 +30,7 @@ class monitoring():
         touch status file when successfully terminated
         """
         if os.path.exists(self.monitoring_file):
-            os.remove(fself.monitoring_fileile)
+            os.remove(self.monitoring_file)
         open(self.monitoring_file, 'a').close()
 
 def add_tags(tags, content):
