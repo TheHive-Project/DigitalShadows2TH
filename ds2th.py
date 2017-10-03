@@ -354,7 +354,7 @@ def run():
             incidents = find_incidents(dsapi, last)
             create_thehive_alerts(TheHive, incidents)
         if args.monitor:
-            mon = monitoring("{}/zf2th.status".format(
+            mon = monitoring("{}/ds2th.status".format(
                 os.path.dirname(os.path.realpath(__file__))))
             mon.touch()
  
