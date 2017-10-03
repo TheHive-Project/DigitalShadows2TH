@@ -355,9 +355,9 @@ def run():
             create_thehive_alerts(TheHive, incidents)
 
     def inc(args):
-         if 'intel_incidents' in args and args.intel_incidents is not None:
+        if 'intel_incidents' in args and args.intel_incidents is not None:
             intel_incidents = get_intel_incidents(dsapi, args.intel_incidents)
-        create_thehive_alerts(TheHive, intel_incidents)
+            create_thehive_alerts(TheHive, intel_incidents)
 
         if 'incidents' in args and args.incidents is not None:
             incidents = get_incidents(dsapi, args.incidents)
