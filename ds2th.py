@@ -303,7 +303,7 @@ def get_intel_incidents(dsapi, id_list):
 def build_thumbnail(dsapi, thumbnail_id):
     
     """
-    Get Intel Incident screenshot thumbnail
+    Get DigitalShadows intel-incident screenshot thumbnail
     :param dsapi: 
     :type dsapi: DigitalShadows.api.DigitalShadowsApi
     :param thumbnail_id:
@@ -339,7 +339,7 @@ def create_thehive_alerts(config, alerts):
 def run():
     
     """
-        Downloads DigitalShadows incident and creates a new Case in TheHive
+        Download DigitalShadows incident and create a new alert in TheHive
     """
 
 
@@ -368,7 +368,7 @@ def run():
             create_thehive_alerts(TheHive, incidents)
 
     parser = argparse.ArgumentParser(
-        description="Get DS alerts and create alerts in TheHive")
+        description="Get DS incidents and intel-incidents and create alerts in TheHive")
     parser.add_argument("-d", "--debug",
                         action='store_true',
                         default=False,
@@ -398,8 +398,8 @@ def run():
                              metavar="M",
                              nargs=1,
                              type=int,required=True,
-                             help="Get all incident published during\
-                              last [M] minutes")
+                             help="Get all incidents published during\
+                              the last [M] minutes")
     parser_find.add_argument("-m", "--monitor",
                              action='store_true',
                              default=False,
