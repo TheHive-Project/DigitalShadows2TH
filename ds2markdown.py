@@ -10,7 +10,7 @@ class ds2markdown():
         self.thumbnail = thumbnail
         self.source = ""
         self.thdescription = "{0} {1} {2} {3} {4} {5} {6}".format(
-            "**Scope:** {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Publiched:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
+            "**Scope:** {0}\n\n**Type:** {1}\n\n**Occurred:** {2}\n\n**Verified:** {3}\n\n**Modified:** {4}\n\n**Published:** {5}\n\n**Identifier:** {6}\n\n**Tags:** {7}\n\n".format(
                     content.get('scope',"None"),
                     content.get('type',"None"),
                     content.get('occurred',"None"),
@@ -56,7 +56,7 @@ class ds2markdown():
                             details.get('serviceProvider',"None")
                              )
                 if 'location' in details:
-                    source += "**Geolocalication:** " + details['location']['country'] + \
+                    source += "**Geolocation:** " + details['location']['country'] + \
                                 +"/"+ details['location']['city'] + "\n\n"
 
             if 'ports' in  c:
