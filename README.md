@@ -18,7 +18,7 @@ Digital Shadows *incidents* and
 transformed into new cases using pre-defined incident response templates or 
 added into existing ones.
 
-DigitalShadows2TH is written in Python 3.
+DigitalShadows2TH is written in Python 3 by TheHive Project.
 
 ## Overview
 DigitalShadows2TH is made of several parts:
