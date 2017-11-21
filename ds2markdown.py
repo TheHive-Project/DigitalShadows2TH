@@ -176,9 +176,10 @@ class ds2markdown():
         if 'tags' in content:
             t = ""
             for tag in content['tags']:
-                if t != "":
-                    t +=", "
-                t += "_{}_".format(tag['name'])
+                if tag.get('name'):
+                    if t != "":
+                        t +=", "
+                    t += "_{}_".format(tag['name'])
         else:
             t += "-"
         return t
