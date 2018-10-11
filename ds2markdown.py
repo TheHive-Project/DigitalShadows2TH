@@ -179,6 +179,5 @@ class ds2markdown():
                 if t != "":
                     t +=", "
                 t += "_{}_".format(tag['name'])
-        else:
-            t += "-"
-        return t
+            return t
+        return "-"
