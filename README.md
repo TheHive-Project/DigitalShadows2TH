@@ -26,7 +26,7 @@ DigitalShadows2TH is made of several parts:
 - `DigitalShadows/api.py` : the main library to interact with the 
 Digital Shadows Searchlight API and fetch *incidents*
 and *intel-incidents*.
-- `ds2markdown.py` : a program which converts DigitalShadows data
+- `ds2markdown.py` : a program which converts Digital Shadows data
  into Markdown as used by alerts in TheHive.
 - `config.py.template` : a configuration template which contains all the 
 necessary information to connect to the APIs of Digital Shadows and TheHive. 
@@ -40,8 +40,8 @@ You'll need Python 3, the `requests` library and [TheHive4py](https://github.com
 a Python client for TheHive.
 
 Clone the repository then copy the `config.py.template` file as `config.py` 
-and fill in the blanks: proxies if applicable, API key, URLs, accounts 
-pertaining to your Digital Shadows subscription and your instance of THeHive.
+and fill in the blanks: proxies if applicable, API keys, URLs, accounts 
+pertaining to your Digital Shadows subscription and your instance of TheHive.
 
 **Note**: you need TheHive 2.13 or better and an account with the ability to create alerts.
 
@@ -70,15 +70,16 @@ optional arguments:
   -d, --debug  generate a log file and and active debug logging
 ```
 
-The program comes with 2 commands :
+The program comes with 2 commands:
 - `inc` to fetch *incidents* or *intel-incidents* by their IDs
 - `find` to fetch *incidents* and/or *intel-incidents* published during 
 the last M minutes. 
-- `-d` : add this switch to get `debug` information which will be added to the
-`ds2th.log` file. The file will be created in the same folder as the main 
-program.
 
-### Retrieve incidents or intel-incidents Specified by their ID
+If you need debbuging information, add the `d`switch and the program will 
+create a file called `ds2th.log`. It will be created in the same folder as the 
+main program.
+
+### Retrieve incidents or intel-incidents specified by their ID
 
 ```
 ./ds2th.py inc -h
@@ -134,13 +135,13 @@ $ ./ds2th.py inc -I 123456
 $ ./ds2th.py inc -I 123456 -i 234567
 ```
 
-- Add a cron job and check for new published incidents every 10 mins
+- Add a cron job and check for new published incidents every 10 mins:
 
 ```
 */10    *   *   *   * /path/to/ds2th.py find -l 15
 ```
 
-- Enable logging
+- Enable logging:
 
 ```
 */10    *   *   *   * /path/to/ds2th.py -d find -l 15
