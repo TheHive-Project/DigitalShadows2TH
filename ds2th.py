@@ -3,7 +3,7 @@
 
 import os
 import sys
-import getopt
+import re
 import argparse
 import datetime
 from io import BytesIO
@@ -16,8 +16,7 @@ from thehive4py.api import TheHiveApi
 from thehive4py.models import Alert, AlertArtifact
 
 from config import DigitalShadows, TheHive
-from ds2markdown import ds2markdown
-
+from ds2markdown import ds2markdown, databreach_message
 
 class monitoring():
     
@@ -158,8 +157,32 @@ def build_observables(observables):
     return artefacts
 
 
+def build_observables_from_databreach(observables):
+    """
+    Convert DS observables into TheHive observables
+    :param observables: observables from DS
+    :type observables: dict
+    :return: AlertArtifact
+    :rtype: thehive4py.models AlertArtifact
+    """
 
-def build_alert(incident, observables, thumbnail):
+    artefacts = []
+    if observables.get('total', 0) > 0:
+
+        for ioc in observables.get('content'):
+            blah=type(databreach_message(ioc)),
+            a = AlertArtifact(
+                data=ioc.get('username'),
+                dataType="mail" if bool(re.search(r"^[A-Za-z0-9\.\+\-\_]+\@[\w\d\-\_\.]+\.[a-zA-Z]{2,3}$", ioc.get('username'))) else "other",
+                message=databreach_message(ioc),
+                tlp=2,
+                tags=["src:DigitalShadows", "databreach"]
+            )
+            artefacts.append(a)
+
+    return artefacts
+
+def build_alert(incident, type, observables, thumbnail):
     
     """
     Convert DigitalShadows alert into a TheHive Alert
@@ -173,6 +196,11 @@ def build_alert(incident, observables, thumbnail):
     :rtype: thehive4py.models Alerts
     """
 
+    if type in ['incident', 'intel-incident']:
+        obs=build_observables(observables)
+    elif type in ['databreach']:
+        obs = build_observables_from_databreach(observables.get('data'))
+
     a = Alert(title="{}".format(incident.get('title')),
                  tlp=2,
                  severity=th_severity(incident.get('severity')),
@@ -182,7 +210,7 @@ def build_alert(incident, observables, thumbnail):
                  caseTemplate=TheHive['template'],
                  source="DigitalShadows",
                  sourceRef=str(incident.get('id')),
-                 artifacts=build_observables(observables)
+                 artifacts=obs
                  )
     logging.debug("build_alert: alert built for DS id #{}".format(incident.get('id')))
     return a
@@ -196,6 +224,7 @@ def find_incidents(dsapi, since):
     :return: list of  thehive4py.models Alerts
     :rtype: array
     """
+    inc_type = "incident"
 
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
@@ -210,7 +239,7 @@ def find_incidents(dsapi, since):
                 thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail':""}
-            yield build_alert(i, {}, thumbnail)
+            yield build_alert(i, inc_type, {}, thumbnail)
     else:
         logging.debug("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
         sys.exit("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
@@ -225,17 +254,30 @@ def get_incidents(dsapi, id_list):
     :rtype: thehive4py.models Alert
     
     """
+    inc_type = "incident"
+
     while id_list:
         id = id_list.pop()
         response = dsapi.get_incident(id)
+        iocs = {}
         if response.get('status') == 'success':
             data = response.get('data')
             logging.debug('get_incidents(): DS incident {} fetched'.format(data.get('id')))
+
+            # Add Thumbnail or screenshot if exist
             if data.get('entitySummary') and data.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, data.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail': ""}
-            yield build_alert(data, {}, thumbnail)
+
+            # add records for databreaches
+            if data.get('entitySummary') and data.get('entitySummary').get('dataBreach'):
+                inc_type = "databreach"
+                iocs = dsapi.get_databreach_records(data.get('entitySummary') and data.get('entitySummary').get('dataBreach').get('id'))
+
+
+
+            yield build_alert(data, inc_type, iocs, thumbnail)
         else:
             logging.debug("get_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
             sys.exit("find_incidents: Error while fetching incident #{}: {}".format(id, response.get('data')))
@@ -250,7 +292,7 @@ def find_intel_incidents(dsapi, since):
     :return: alert
     :rtype: thehive4py.models Alert
     """
-
+    inc_type = "intel-incident"
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
     response = dsapi.find_intel_incidents(s)
@@ -258,15 +300,12 @@ def find_intel_incidents(dsapi, since):
     if response.get('status') == "success":
         data = response.get('data')
         logging.debug('find_intel_incidents(): {} DS intel-incident(s) downloaded'.format(data.get('total')))
-
         for i in data.get('content'):
-            iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
-
             if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail':''}
-            yield build_alert(i, iocs, thumbnail)
+            yield build_alert(i, inc_type, iocs, thumbnail)
 
     else:
         logging.debug("find_intel_incidents(): Error while searching intel-incidents since {} min: {}".format(s, response.get('data')))
@@ -282,6 +321,7 @@ def get_intel_incidents(dsapi, id_list):
     :return: Thehive alert
     :rtype: thehive4py.models Alert
     """
+    inc_type = "intel-incident"
 
     while id_list:  
         id = id_list.pop()
@@ -294,7 +334,7 @@ def get_intel_incidents(dsapi, id_list):
             else:
                 thumbnail = {'thumbnail': ""}
             iocs = dsapi.get_intel_incident_iocs(data.get('id')).json()
-            yield build_alert(data, iocs, thumbnail)
+            yield build_alert(data, inc_type, iocs, thumbnail)
         else:
             logging.debug("Error while fetching intel-incident #{}: {}".format(id, response.get('data')))
             sys.exit("Error while fetching intel-incident #{}: {}".format(id, response.get('data')))
@@ -320,6 +360,15 @@ def build_thumbnail(dsapi, thumbnail_id):
         return {"thumbnail":"data:{};base64,{}".format(response.headers['Content-Type'], b64_thumbnail)}
     else:
         return {"thumbnail": ""}
+
+def databreach_records(dsapi, databreach_id):
+    """
+    Return list of interesting records in the databreach
+    :param dsapi:
+    :param databreach_id:
+    :return:
+    """
+    return dsapi.get_databreach_records(databreach_id)
 
 def create_thehive_alerts(config, alerts):
     
