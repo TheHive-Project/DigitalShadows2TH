@@ -22,8 +22,8 @@ class DigitalShadowsApi():
         self.proxies = config['proxies']
         self.verify = config['verify']
         self.headers = {
-            'Content-Type': 'application/vnd.polaris-v29+json',
-            'Accept': 'application/vnd.polaris-v29+json'
+            'Content-Type': 'application/vnd.polaris-v38+json',
+            'Accept': 'application/vnd.polaris-v38+json'
         }
         self.auth = requests.auth.HTTPBasicAuth(username=self.key,
                                                 password=self.secret)
@@ -241,3 +241,53 @@ class DigitalShadowsApi():
                                  verify=self.verify)
         except requests.exceptions.RequestException as e:
                 sys.exit("Error: {}".format(e))
+
+
+    def get_databreach(self, id):
+        """
+        fetch data leakage information
+        :param self:
+        :param id: int
+        :return: requests response
+        """
+        req = "{}/api/data-breach/{}".format(self.url, id)
+        headers = self.headers
+        try:
+            return requests.get(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                verify=self.verify)
+        except requests.exceptions.RequestException as e:
+            sys.exit("Error: {}".format(e))
+
+    def get_databreach_records(self, id):
+        """
+        fetch data leakage information
+        :param self:
+        :param id: int
+        :return: requests response
+        """
+        payload = json.dumps({
+          "filter": {
+            "published": "ALL",
+            "domainNames": [],
+            "reviewStatuses": []
+          },
+          "sort": {
+            "property": "username",
+            "direction": "ASCENDING"
+          },
+          "pagination": {
+            "size": 1000,
+            "offset": 0
+          }
+        })
+        req = "{}/api/data-breach/{}/records".format(self.url, id)
+        headers = self.headers
+        try:
+            resp = requests.post(req, headers=headers, auth=self.auth, proxies=self.proxies,
+                                data=payload, verify=self.verify)
+            if resp.status_code == 200:
+                return self.response("success", resp.json())
+            else:
+                return self.response("failure", resp.json())
+        except requests.exceptions.RequestException as e:
+            sys.exit("Error: {}".format(e))

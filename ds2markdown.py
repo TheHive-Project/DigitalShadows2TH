@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
+import string
+from string import Template
 import json
 
 class ds2markdown():
@@ -134,7 +135,7 @@ class ds2markdown():
                                 dataBreach.get('title',"None"),
                                 dataBreach.get('domainName',"None"),
                                 dataBreach.get('published',"None"),
-                                dataBreach.get('occured',"None"),
+                                dataBreach.get('occurred',"None"),
                                 dataBreach.get('modified',"None"),
                                 dataBreach.get('id', "None")
                         )
@@ -182,4 +183,26 @@ class ds2markdown():
                     t += "_{}_".format(tag['name'])
             return t
         return "-"
+
+def databreach_message(ioc):
+    """
+    Return description for an observable created from a databreach record
+    :param ioc: dict
+    :return: str
+    """
+    databreach_observable_message_template = "**Databreach record from DigitalShadows** \n\n"+\
+              "Password: $password\n\n"+\
+              "Published: $published\n\n\n\n"+\
+              "**Seen in previous breaches**\n\n"+\
+              "  - Raw text: $rawtext\n\n"+\
+              "  - Username: $username\n\n"+\
+              "  - Username & password: $usernamepassword"
+    message = Template(databreach_observable_message_template).substitute(
+        password=ioc.get('password', '-- No password found -- '),
+        published=ioc.get('published', 'None'),
+        rawtext=ioc.get('priorRowTextBreachCount', "0"),
+        username=ioc.get('priorUsernameBreachCount', "0"),
+        usernamepassword=ioc.get('priorUsernameBreachCount', "0"))
+    return message
+
 
