@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import string
 from string import Template
 import json
 
@@ -182,8 +183,6 @@ class ds2markdown():
                     t += "_{}_".format(tag['name'])
             return t
         return "-"
-
-
 
 def databreach_message(ioc):
     """

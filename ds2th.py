@@ -6,10 +6,10 @@ import sys
 import re
 import argparse
 import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 import base64
 import logging
-
+from random import randint
 
 from DigitalShadows.api import DigitalShadowsApi
 from thehive4py.api import TheHiveApi
@@ -156,6 +156,24 @@ def build_observables(observables):
 
     return artefacts
 
+def databreach_list(iocs):
+    """
+    Return str content for csv file
+    :param iocs:
+    :return:
+    """
+    csv = ''
+    index=[]
+    if len(iocs) > 0 and type(iocs[0] is dict):
+        for k, v in iocs[0].items():
+            if type(v) is str:
+                csv += f"{k};"
+                index.append(k)
+    for ioc in iocs:
+        csv += "\n"
+        for i in index:
+            csv += f"{ioc.get(i, '')};"
+    return csv
 
 def build_observables_from_databreach(observables):
     """
@@ -168,9 +186,7 @@ def build_observables_from_databreach(observables):
 
     artefacts = []
     if observables.get('total', 0) > 0:
-
         for ioc in observables.get('content'):
-            blah=type(databreach_message(ioc)),
             a = AlertArtifact(
                 data=ioc.get('username'),
                 dataType="mail" if bool(re.search(r"^[A-Za-z0-9\.\+\-\_]+\@[\w\d\-\_\.]+\.[a-zA-Z]{2,3}$", ioc.get('username'))) else "other",
@@ -179,6 +195,18 @@ def build_observables_from_databreach(observables):
                 tags=["src:DigitalShadows", "databreach"]
             )
             artefacts.append(a)
+
+        leakfile = '/tmp/leak.csv'
+        leakfd = open( leakfile, 'w')
+        leakfd.write(databreach_list(observables.get('content')))
+        leakfd.close()
+
+        artefacts.append(AlertArtifact(dataType="file",
+                                       data=leakfile,
+                                       message="List of records from DigitalShadows",
+                                       tlp=2,
+                                       tags=["src:DigitalShadows", "databreach"])
+                         )
 
     return artefacts
 
@@ -209,7 +237,8 @@ def build_alert(incident, type, observables, thumbnail):
                  tags=th_alert_tags(incident),
                  caseTemplate=TheHive['template'],
                  source="DigitalShadows",
-                 sourceRef=str(incident.get('id')),
+                 #  sourceRef=str(incident.get('id')),
+                 sourceRef=str(randint(1, 10000)),
                  artifacts=obs
                  )
     logging.debug("build_alert: alert built for DS id #{}".format(incident.get('id')))
