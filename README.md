@@ -36,8 +36,7 @@ All information is required.
 all relevant information, and observables if any.
 
 ## Prerequisites
-You'll need Python 3, the `requests` library and [TheHive4py](https://github.com/CERT-BDF/TheHive4py), 
-a Python client for TheHive.
+You'll need Python 3.5+, `python-magic` and  `requests` libraries and [TheHive4py](https://github.com/CERT-BDF/TheHive4py),  a Python client for TheHive.
 
 Clone the repository then copy the `config.py.template` file as `config.py` 
 and fill in the blanks: proxies if applicable, API keys, URLs, accounts 
@@ -161,6 +160,44 @@ The monitoring switch makes the program "touch" a file named
 `ds2th.status` once it has successfully finished. To monitor it, just check
 the modification date of this file and compare it to the frequency used
 in your crontab entry.
+
+## Docker
+
+The program can be run using Docker.
+
+### Configure the feeder
+
+**Note**: this is important to configure the feeder _**before**_ build the container as the configuration file is copied inside it. 
+Copy the `config.py.sample` to `config.py` and fill the blanks.
+
+### Build the container
+
+In the project folder run the following command:
+
+```bash
+docker build --no-cache  -t ds2th .
+```
+
+### Run with docker 
+
+```bash
+docker  run \
+--rm\
+-it \
+--net=host \
+--mount type=bind,source="$(pwd)"/ds2th.log,target=/app/ds2th.log \
+--mount type=bind,source="$(pwd)"/ds2th.status,target=/app/ds2th.status \
+ds2th OPTIONS
+```
+
+**Note**: files `"$(pwd)"/ds2th.log` and `"$(pwd)"/ds2th.status` should exist on the host before running the docker.
+
+### Run it with cron 
+
+For example: 
+```
+*/10    *   *   *   * docker run --rm -it --net=host --mount type=bind,source="$(pwd)"/ds2th.log,target=/app/ds2th.log --mount type=bind,source="$(pwd)"/ds2th.status,target=/app/ds2th.status ds2th -d find -l 15
+```
 
 # License
 DigitalShadows2TH is an open source and free software released under the 

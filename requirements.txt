@@ -1,2 +1,3 @@
 requests
 thehive4py
+python-magic
