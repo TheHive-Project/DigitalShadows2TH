@@ -167,7 +167,7 @@ The program can be run using Docker.
 
 ### Configure the feeder
 
-**Note**: this is important to configure the feeder _**before**_ build the container as the configuration file is copied inside it. 
+**Note**: this is important to configure the feeder _**before**_ building the container as the configuration file is copied inside it. 
 Copy the `config.py.sample` to `config.py` and fill the blanks.
 
 ### Build the container
