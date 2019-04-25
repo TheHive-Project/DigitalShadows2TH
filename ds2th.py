@@ -14,7 +14,8 @@ from DigitalShadows.api import DigitalShadowsApi
 from thehive4py.api import TheHiveApi
 from thehive4py.models import Alert, AlertArtifact
 
-from config import DigitalShadows, TheHive
+
+from config import DigitalShadows,TheHive
 from ds2markdown import ds2markdown, databreach_message
 
 class monitoring():
@@ -25,12 +26,13 @@ class monitoring():
     def touch(self):
         
         """
-        touch status file when successfully terminated
+        //touch status file when successfully terminated
         """
-        if os.path.exists(self.monitoring_file):
-            open(self.monitoring_file, 'a').close()
-        else:
+        try:
             os.utime(self.monitoring_file, None)
+        except FileNotFoundError:
+            open(self.monitoring_file, 'a').close()
+
 
 def add_tags(tags, content):
     
@@ -235,7 +237,7 @@ def build_alert(incident, type, observables, thumbnail):
                  description=ds2markdown(incident, thumbnail).thdescription,
                  type=incident.get('type'),
                  tags=th_alert_tags(incident),
-                 caseTemplate=TheHive['template'],
+                 caseTemplate=TheHive.get('templates').get('default'),
                  source="DigitalShadows",
                  sourceRef=str(incident.get('id')),
                  artifacts=obs
@@ -316,7 +318,7 @@ def get_incidents(dsapi, id_list):
             yield build_alert(data, inc_type, iocs, thumbnail)
         else:
             logging.debug("get_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
-            sys.exit("find_incidents: Error while fetching incident #{}: {}".format(id, response.get('data')))
+            sys.exit("get_incidents: Error while fetching incident #{}: {}".format(id, response.get('data')))
 
 
 def find_intel_incidents(dsapi, since):
@@ -418,10 +420,12 @@ def create_thehive_alerts(config, alerts):
     :type alerts: list
     :return: create TH alert
     """
-
+    import json 
     thapi = TheHiveApi(config.get('url', None), config.get('key'), config.get('password', None),
                        config.get('proxies'))
     for a in alerts:
+        if config.get('templates').get(a.type):
+            a.caseTemplate = config.get('templates').get(a.type)
         thapi.create_alert(a)
 
 def run():
@@ -430,6 +434,13 @@ def run():
         Download DigitalShadows incident and create a new alert in TheHive
     """
 
+    try:
+        logfile = DigitalShadows.get('log_file')
+        monitoringfile = DigitalShadows.get('monitoring_file')
+        print(monitoringfile)
+    except ModuleNotFoundError as e:
+        logging.debug("Error while importing config, check config.py file in config folder: \n{}".format(e))
+        sys.exit("Error while importing config, check config.py file in config/ folder or debug logs")
 
     def find(args):
         if 'last' in args and args.last is not None:
@@ -442,8 +453,7 @@ def run():
             incidents = find_incidents(dsapi, last)
             create_thehive_alerts(TheHive, incidents)
         if args.monitor:
-            mon = monitoring("{}/ds2th.status".format(
-                os.path.dirname(os.path.realpath(__file__))))
+            mon = monitoring(monitoringfile)
             mon.touch()
  
     def inc(args):
@@ -508,8 +518,7 @@ def run():
     args = parser.parse_args()
    
     if args.debug:
-        logging.basicConfig(filename='{}/ds2th.log'.format(
-            os.path.dirname(os.path.realpath(__file__))),
+        logging.basicConfig(filename=logfile,
                             level='DEBUG',
                             format='%(asctime)s %(levelname)s %(message)s')
     dsapi = DigitalShadowsApi(DigitalShadows)
