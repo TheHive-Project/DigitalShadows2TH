@@ -12,8 +12,6 @@ DigitalShadows = {
     'monitoring_file':'log/ds2th.status'
 }
 
-}
-
 TheHive = {
   'proxies':{
       'http': '',
@@ -24,6 +22,5 @@ TheHive = {
     'template': {
         'default':''
     }
-
 }
 

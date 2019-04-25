@@ -25,12 +25,65 @@ You'll need Python 3.5+, `python-magic` and  `requests` libraries and [TheHive4p
 
 Clone the repository then copy the `config/config.py.template` file as `config/config.py` and fill in the blanks: proxies if applicable, API keys, URLs, accounts pertaining to your Digital Shadows subscription and your instance of TheHive.
 
-**Note**: you need TheHive 2.13 or better and an account with the ability to create alerts.
+**Note**: you need TheHive 2.13 or later and an account with the ability to create alerts.
 
 Then install the Python requirements:
 
 `$ pip3 install -r requirements.txt`
 
+The feeder can also be run using docker. Please refer to this [section](#docker) for more details.
+
+## Configure the feeder
+
+inside the `config` folder, copy the `config.py.sample` to `config.py` and fill the blanks.
+
+```python
+DigitalShadows = {
+    'proxies':{
+        'http': '',
+        'https': ''
+    },
+    'url':'',
+    'ds_key':'',
+    'ds_secret':'',
+    'verify':True,
+    'fulltext':'true'
+    'log_file':'log/ds2th.log',
+    'monitoring_file':'log/ds2th.status'
+}
+
+TheHive = {
+  'proxies':{
+      'http': '',
+      'https': ''
+  },
+    'url':'',
+    'key':'',
+    'template': {
+        'default':''
+    }
+}
+```
+
+Several TheHive case templates can be defined, depending on DigitalShadows incident type.
+From the DigitalShadows [API documentation](https://portal-digitalshadows.com/learn/api/latest/incidents/get/incidents/%7Bid%7D), incidents can be any type of : 
+```
+DATA_LEAKAGE
+CYBER_THREAT
+PHYSICAL_SECURITY
+SOCIAL_MEDIA_COMPLIANCE
+BRAND_PROTECTION
+INFRASTRUCTURE
+```
+
+To configure a custom case template for a type of incident, just update the configuration for TheHive like this :
+
+```python
+  'template': {
+        'default':'DefaultCaseTemplateForDigitalShadows',
+        'DATA_LEAKAGE': 'TheHiveCaseTemplateForDataLeaks'
+    }
+```
 
 ## Usage
 
@@ -144,10 +197,7 @@ The monitoring switch makes the program "touch" a file named `ds2th.status` once
 
 The program can be run using Docker.
 
-### Configure the feeder
 
-**Note**: this is important to configure the feeder _**before**_ building the container as the configuration file is copied inside it. 
-inside the `config` folder, copy the `config.py.sample` to `config.py` and fill the blanks.
 
 ### Build the container
 
@@ -162,39 +212,34 @@ docker build --no-cache  -t ds2th .
 ```bash
 docker  run \
 --rm\
--it \
 --net=host \
 --mount type=bind,source="$(pwd)"/config,target=/app/config \
 --mount type=bind,source="$(pwd)"/log,target=/app/log \
 ds2th OPTIONS
 ```
 
-
 ### Run it with cron 
 
 For example: 
 ```
-*/10    *   *   *   * docker run --rm -it --net=host --mount type=bind,source="$(pwd)"/ds2th.log,target=/app/ds2th.log --mount type=bind,source="$(pwd)"/ds2th.status,target=/app/ds2th.status ds2th -d find -l 15
+*/10    *   *   *   * docker run --rm --net=host --mount type=bind,source="$(pwd)"/config,target=/app/config --mount type=bind,source="$(pwd)"/log,target=/app/log ds2th -d find -l 15 -m
 ```
 
 # License
-DigitalShadows2TH is an open source and free software released under the 
-[AGPL](LICENSE) 
-(Affero General Public License). We, TheHive Project, are committed to ensure
-that DigitalShadows2TH will remain a free and open source project on the 
-long-run.
+
+DigitalShadows2TH is an open source and free software released under the [AGPL](LICENSE) (Affero General Public License). We, TheHive Project, are committed to ensure that DigitalShadows2TH will remain a free and open source project on the  long-run.
 
 # Updates
+
 Information, news and updates are regularly posted on [TheHive Project Twitter account](https://twitter.com/thehive_project) and on [the blog](https://blog.thehive-project.org/).
 
 # Contributing
-Please see our [Code of conduct](code_of_conduct.md). We welcome your 
-contributions. Please feel free to fork the code, play with it, make some 
-patches and send us pull requests via [issues](https://github.com/CERT-BDF/DigitalShadows2TH/issues).
+
+Please see our [Code of conduct](code_of_conduct.md). We welcome your contributions. Please feel free to fork the code, play with it, make some patches and send us pull requests via [issues](https://github.com/CERT-BDF/DigitalShadows2TH/issues).
 
 # Support
-Please [open an issue on GitHub](https://github.com/CERT-BDF/DigitalShadows2TH/issues)
- if you'd like to report a bug or request a feature. We are also available on [Gitter](https://gitter.im/TheHive-Project/TheHive) to help you out.
+
+Please [open an issue on GitHub](https://github.com/CERT-BDF/DigitalShadows2TH/issues) if you'd like to report a bug or request a feature. We are also available on [Gitter](https://gitter.im/TheHive-Project/TheHive) to help you out.
 
 If you need to contact the project team, send an email to <support@thehive-project.org>.
 
@@ -203,7 +248,9 @@ If you need to contact the project team, send an email to <support@thehive-proje
 - If you have problems with [TheHive](https://github.com/CERT-BDF/TheHive), please [open an issue on its dedicated repository](https://github.com/CERT-BDF/TheHive/issues/new).
 
 # Community Discussions
+
 We have set up a Google forum at <https://groups.google.com/a/thehive-project.org/d/forum/users>. To request access, you need a Google account. You may create one [using a Gmail address](https://accounts.google.com/SignUp?hl=en) or [without it](https://accounts.google.com/SignUpWithoutGmail?hl=en).
 
 # Website
+
 <https://thehive-project.org/>
