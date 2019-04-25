@@ -1,46 +1,29 @@
 # DigitalShadows2TH: Digital Shadows Alert Feeder for TheHive 
-[Digital Shadows](https://www.digitalshadows.com/) is a commercial Threat 
-Intelligence provider which, according to their website:
 
-> monitors, manages and remediates digital risk across the widest range of data sources within the open, deep, and dark web to protect an organization’s business, brand, and reputation
+[Digital Shadows](https://www.digitalshadows.com/) is a commercial Threat Intelligence provider which, according to their website:
 
-Using several criteria, data analytics and human actions, their SearchLight 
-service can notify customers about *incidents* and *intel-incidents*. The 
-service
-offers an API which can be leveraged to consume these two types of 
-information and programmatically send them as alerts to [TheHive](https://github.com/CERT-BDF/TheHive), a popular free and open source 
-Security Incident Response Platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly.
+> monitors, manages and remediates digital risk across the widest range of data sources within the open, deep, and dark web to protect an organization’s business, brand, and reputation using several criteria, data analytics and human actions, their SearchLight service can notify customers about *incidents* and *intel-incidents*. 
 
-DigitalShadows2TH is a free, open source Digital Shadows alert feeder for 
-TheHive. You can use it to import 
-Digital Shadows *incidents* and 
-*intel-incidents* as alerts in TheHive, where they can be previewed and 
-transformed into new cases using pre-defined incident response templates or 
-added into existing ones.
+The service offers an API which can be leveraged to consume these two types of information and programmatically send them as alerts to [TheHive](https://github.com/CERT-BDF/TheHive), a popular free and open source Security Incident Response Platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly.
+
+DigitalShadows2TH is a free, open source Digital Shadows alert feeder for TheHive. You can use it to import Digital Shadows *incidents* and *intel-incidents* as alerts in TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
 
 DigitalShadows2TH is written in Python 3 by TheHive Project.
 
 ## Overview
+
 DigitalShadows2TH is made of several parts:
 
-- `DigitalShadows/api.py` : the main library to interact with the 
-Digital Shadows Searchlight API and fetch *incidents*
-and *intel-incidents*.
-- `ds2markdown.py` : a program which converts Digital Shadows data
- into Markdown as used by alerts in TheHive.
-- `config.py.template` : a configuration template which contains all the 
-necessary information to connect to the APIs of Digital Shadows and TheHive. 
-All information is required.
-- `ds2th.py` : the main program. It gets Digital Shadows *incidents* or 
-*intel-incidents* and creates alerts in TheHive with a description containing 
-all relevant information, and observables if any.
+- `DigitalShadows/api.py` : the main library to interact with the Digital Shadows Searchlight API and fetch *incidents* and *intel-incidents*.
+- `ds2markdown.py` : a program which converts Digital Shadows data into Markdown as used by alerts in TheHive.
+- `config/config.py.template` : a configuration template which contains all the necessary information to connect to the APIs of Digital Shadows and TheHive. All information is required.
+- `ds2th.py` : the main program. It gets Digital Shadows *incidents* or *intel-incidents* and creates alerts in TheHive with a description containing all relevant information, and observables if any.
 
 ## Prerequisites
+
 You'll need Python 3.5+, `python-magic` and  `requests` libraries and [TheHive4py](https://github.com/CERT-BDF/TheHive4py),  a Python client for TheHive.
 
-Clone the repository then copy the `config.py.template` file as `config.py` 
-and fill in the blanks: proxies if applicable, API keys, URLs, accounts 
-pertaining to your Digital Shadows subscription and your instance of TheHive.
+Clone the repository then copy the `config/config.py.template` file as `config/config.py` and fill in the blanks: proxies if applicable, API keys, URLs, accounts pertaining to your Digital Shadows subscription and your instance of TheHive.
 
 **Note**: you need TheHive 2.13 or better and an account with the ability to create alerts.
 
@@ -50,8 +33,8 @@ Then install the Python requirements:
 
 
 ## Usage
-Once your configuration file `config.py` is ready, use the main program to 
-fetch or find Digital Shadows (DS) *incidents* and *intel-incidents*:
+
+Once your configuration file `config.py` is ready and set up in the `config` folder, use the main program to fetch or find Digital Shadows (DS) *incidents* and *intel-incidents*:
 
 ```
 ./ds2th.py -h
@@ -75,8 +58,7 @@ The program comes with 2 commands:
 the last M minutes. 
 
 If you need debbuging information, add the `d`switch and the program will 
-create a file called `ds2th.log`. It will be created in the same folder as the 
-main program.
+create a file called `ds2th.log`. It will be created in the `log` folder by default. This can be set up in the `config/config.py` configuration file.
 
 ### Retrieve incidents or intel-incidents specified by their ID
 
@@ -146,7 +128,7 @@ $ ./ds2th.py inc -I 123456 -i 234567
 */10    *   *   *   * /path/to/ds2th.py -d find -l 15
 ```
 
-This will create a `ds2th.log` file in the folder of the main program.
+This will create a `ds2th.log` file in the `log` folder of the main program.
 
 ### Monitoring 
 
@@ -156,10 +138,7 @@ This will create a `ds2th.log` file in the folder of the main program.
 */10    *   *   *   * /path/to/ds2th.py find -l 15 -m
 ```
 
-The monitoring switch makes the program "touch" a file named
-`ds2th.status` once it has successfully finished. To monitor it, just check
-the modification date of this file and compare it to the frequency used
-in your crontab entry.
+The monitoring switch makes the program "touch" a file named `ds2th.status` once it has successfully finished. This file is set by default in the `log`folder. To monitor it, just check the modification date of this file and compare it to the frequency used in your crontab entry.
 
 ## Docker
 
@@ -168,7 +147,7 @@ The program can be run using Docker.
 ### Configure the feeder
 
 **Note**: this is important to configure the feeder _**before**_ building the container as the configuration file is copied inside it. 
-Copy the `config.py.sample` to `config.py` and fill the blanks.
+inside the `config` folder, copy the `config.py.sample` to `config.py` and fill the blanks.
 
 ### Build the container
 
@@ -185,12 +164,11 @@ docker  run \
 --rm\
 -it \
 --net=host \
---mount type=bind,source="$(pwd)"/ds2th.log,target=/app/ds2th.log \
---mount type=bind,source="$(pwd)"/ds2th.status,target=/app/ds2th.status \
+--mount type=bind,source="$(pwd)"/config,target=/app/config \
+--mount type=bind,source="$(pwd)"/log,target=/app/log \
 ds2th OPTIONS
 ```
 
-**Note**: files `"$(pwd)"/ds2th.log` and `"$(pwd)"/ds2th.status` should exist on the host before running the docker.
 
 ### Run it with cron 
 
