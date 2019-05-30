@@ -144,7 +144,6 @@ def build_observables(observables):
 
     artefacts = []
     if observables.get('total', 0) > 0:
-
         for ioc in observables.get('content'):
             a = AlertArtifact(
                 data=ioc.get('value'),
@@ -265,6 +264,7 @@ def find_incidents(dsapi, since):
         logging.debug('find_incidents(): {} DS incident(s) downloaded'.format(data.get('total')))
 
         for i in data.get('content'):
+            iocs = {}
             # add records for databreaches
             if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
@@ -277,7 +277,7 @@ def find_incidents(dsapi, since):
                 iocs = dsapi.get_databreach_records(data.get('entitySummary') and data.get('entitySummary').get('dataBreach').get('id'))
 
 
-            yield build_alert(i, inc_type, {}, thumbnail)
+            yield build_alert(i, inc_type, iocs, thumbnail)
     else:
         logging.debug("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
         sys.exit("find_incidents(): Error while fetching incident #{}: {}".format(id, response.get('data')))
@@ -295,9 +295,9 @@ def get_incidents(dsapi, id_list):
     inc_type = "incident"
 
     while id_list:
+        iocs = {}
         id = id_list.pop()
         response = dsapi.get_incident(id)
-        iocs = {}
         if response.get('status') == 'success':
             data = response.get('data')
             logging.debug('get_incidents(): DS incident {} fetched'.format(data.get('id')))
@@ -331,7 +331,6 @@ def find_intel_incidents(dsapi, since):
     :rtype: thehive4py.models Alert
     """
     inc_type = "intel-incident"
-    iocs = {}
     s = "{}/{}".format((datetime.datetime.utcnow() - datetime.timedelta(minutes=int(since))).isoformat(),
                        datetime.datetime.utcnow().isoformat())
     response = dsapi.find_intel_incidents(s)
@@ -340,11 +339,12 @@ def find_intel_incidents(dsapi, since):
         data = response.get('data')
         logging.debug('find_intel_incidents(): {} DS intel-incident(s) downloaded'.format(data.get('total')))
         for i in data.get('content'):
+            iocs = {}
             if i.get('entitySummary') and i.get('entitySummary').get('screenshotThumbnailId'):
                 thumbnail = build_thumbnail(dsapi, i.get('entitySummary').get('screenshotThumbnailId'))
             else:
                 thumbnail = {'thumbnail':''}
-            iocs = dsapi.get_intel_incident_iocs(data.get('id')).json()
+            iocs = dsapi.get_intel_incident_iocs(i.get('id')).json()
             yield build_alert(i, inc_type, iocs, thumbnail)
 
     else:
@@ -362,9 +362,9 @@ def get_intel_incidents(dsapi, id_list):
     :rtype: thehive4py.models Alert
     """
     inc_type = "intel-incident"
-    iocs = {}
 
-    while id_list:  
+    while id_list:
+        iocs = {}
         id = id_list.pop()
         response = dsapi.get_intel_incident(id)
         if response.get('status') == "success":
