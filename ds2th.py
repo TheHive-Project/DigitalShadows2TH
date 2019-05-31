@@ -6,7 +6,7 @@ import sys
 import re
 import argparse
 import datetime
-from io import BytesIO, StringIO
+from io import BytesIO
 import base64
 import logging
 
@@ -420,7 +420,7 @@ def create_thehive_alerts(config, alerts):
     :type alerts: list
     :return: create TH alert
     """
-    import json 
+
     thapi = TheHiveApi(config.get('url', None), config.get('key'), config.get('password', None),
                        config.get('proxies'))
     for a in alerts:
