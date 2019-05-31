@@ -21,7 +21,7 @@ DigitalShadows2TH is made of several parts:
 
 ## Prerequisites
 
-You'll need Python 3.5+, `python-magic` and  `requests` libraries and [TheHive4py](https://github.com/CERT-BDF/TheHive4py),  a Python client for TheHive.
+You'll need Python 3.5s+, `python-magic` and  `requests` libraries and [TheHive4py](https://github.com/CERT-BDF/TheHive4py),  a Python client for TheHive.
 
 Clone the repository then copy the `config/config.py.template` file as `config/config.py` and fill in the blanks: proxies if applicable, API keys, URLs, accounts pertaining to your Digital Shadows subscription and your instance of TheHive.
 
