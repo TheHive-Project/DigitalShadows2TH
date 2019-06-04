@@ -19,7 +19,7 @@ TheHive = {
   },
     'url':'',
     'key':'',
-    'template': {
+    'templates': {
         'default':''
     }
 }

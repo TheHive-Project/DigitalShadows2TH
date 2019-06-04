@@ -227,8 +227,10 @@ def build_alert(incident, type, observables, thumbnail):
 
     if type in ['incident', 'intel-incident']:
         obs=build_observables(observables)
+        template = TheHive.get('templates').get('default')
     elif type in ['databreach']:
         obs = build_observables_from_databreach(observables.get('data'))
+        template = TheHive.get('templates').get('DATA_LEAKAGE')
 
     a = Alert(title="{}".format(incident.get('title')),
                  tlp=2,
@@ -236,7 +238,7 @@ def build_alert(incident, type, observables, thumbnail):
                  description=ds2markdown(incident, thumbnail).thdescription,
                  type=incident.get('type'),
                  tags=th_alert_tags(incident),
-                 caseTemplate=TheHive.get('templates').get('default'),
+                 caseTemplate=template,
                  source="DigitalShadows",
                  sourceRef=str(incident.get('id')),
                  artifacts=obs
