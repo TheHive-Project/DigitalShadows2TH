@@ -195,16 +195,22 @@ The monitoring switch makes the program "touch" a file named `ds2th.status` once
 
 ## Docker
 
-The program can be run using Docker.
+The program can be run using Docker. You can pull the docker or build your own.
 
+ 
 
+### Pull the container
+
+```
+docker pull thehiveproject/ds2th:latest
+```
 
 ### Build the container
 
 In the project folder run the following command:
 
 ```bash
-docker build --no-cache  -t ds2th .
+docker build --no-cache  -t thehiveproject/ds2th .
 ```
 
 ### Run with docker 
@@ -215,14 +221,14 @@ docker  run \
 --net=host \
 --mount type=bind,source="$(pwd)"/config,target=/app/config \
 --mount type=bind,source="$(pwd)"/log,target=/app/log \
-ds2th OPTIONS
+thehiveproject/ds2th OPTIONS
 ```
 
 ### Run it with cron 
 
 For example: 
 ```
-*/10    *   *   *   * docker run --rm --net=host --mount type=bind,source="$(pwd)"/config,target=/app/config --mount type=bind,source="$(pwd)"/log,target=/app/log ds2th -d find -l 15 -m
+*/10    *   *   *   * docker run --rm --net=host --mount type=bind,source="$(pwd)"/config,target=/app/config --mount type=bind,source="$(pwd)"/log,target=/app/log thehiveproject/ds2th -d find -l 15 -m
 ```
 
 # License
