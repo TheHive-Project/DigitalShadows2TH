@@ -227,7 +227,7 @@ def build_alert(incident, type, observables, thumbnail):
 
     if type in ['incident', 'intel-incident']:
         obs=build_observables(observables)
-        template = TheHive.get('templates').get('default')
+        template = Thehive.get('templates'.get(incident.get('type'), 'default'))
     elif type in ['databreach']:
         obs = build_observables_from_databreach(observables.get('data'))
         template = TheHive.get('templates').get('DATA_LEAKAGE')
