@@ -79,7 +79,7 @@ INFRASTRUCTURE
 To configure a custom case template for a type of incident, just update the configuration for TheHive like this :
 
 ```python
-  'template': {
+  'templates': {
         'default':'DefaultCaseTemplateForDigitalShadows',
         'DATA_LEAKAGE': 'TheHiveCaseTemplateForDataLeaks'
     }
@@ -201,17 +201,29 @@ The program can be run using Docker. You can pull the docker or build your own.
 
 ### Pull the container
 
-```
+```bash
 docker pull thehiveproject/ds2th:latest
 ```
 
-### Build the container
+### Or build the container
 
-In the project folder run the following command:
+If you want to build you own docker, in the project folder run the following command:
 
 ```bash
 docker build --no-cache  -t thehiveproject/ds2th .
 ```
+
+### Prepare your environment and configure the feeder
+
+Choose the folder where the configuration and logs will reside. (`/opt/TheHive_feeders/Digitalshadows/` in our documentation)
+
+```bash
+DS2TH_HOMEDIR = /opt/TheHive_feeders/Digitalshadows/
+mkdir -p $DS2TH_HOMEDIR/{config,log}
+wget -O $DS2TH_HOMEDIR/config/config.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config.py.template
+```
+
+and edit `$DS2TH_HOMEDIR/config/config.py` following instructions in #configure-the-feeder. 
 
 ### Run with docker 
 
@@ -219,8 +231,8 @@ docker build --no-cache  -t thehiveproject/ds2th .
 docker  run \
 --rm\
 --net=host \
---mount type=bind,source="$(pwd)"/config,target=/app/config \
---mount type=bind,source="$(pwd)"/log,target=/app/log \
+--mount type=bind,source="$DS2TH_HOMEDIR"/config,target=/app/config \
+--mount type=bind,source="$DS2TH_HOMEDIR"/log,target=/app/log \
 thehiveproject/ds2th OPTIONS
 ```
 
@@ -228,7 +240,7 @@ thehiveproject/ds2th OPTIONS
 
 For example: 
 ```
-*/10    *   *   *   * docker run --rm --net=host --mount type=bind,source="$(pwd)"/config,target=/app/config --mount type=bind,source="$(pwd)"/log,target=/app/log thehiveproject/ds2th -d find -l 15 -m
+*/10    *   *   *   * docker run --rm --net=host --mount type=bind,source="$DS2TH_HOMEDIR"/config,target=/app/config --mount type=bind,source="$DS2TH_HOMEDIR"/log,target=/app/log thehiveproject/ds2th -d find -l 15 -m
 ```
 
 # License
