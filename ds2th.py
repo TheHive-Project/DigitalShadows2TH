@@ -225,12 +225,12 @@ def build_alert(incident, type, observables, thumbnail):
     :rtype: thehive4py.models Alerts
     """
 
+    template = Thehive.get('templates'.get(incident.get('type'), 'default'))
+
     if type in ['incident', 'intel-incident']:
         obs=build_observables(observables)
-        template = Thehive.get('templates'.get(incident.get('type'), 'default'))
     elif type in ['databreach']:
         obs = build_observables_from_databreach(observables.get('data'))
-        template = TheHive.get('templates').get('DATA_LEAKAGE')
 
     a = Alert(title="{}".format(incident.get('title')),
                  tlp=2,
