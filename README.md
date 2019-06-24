@@ -218,6 +218,7 @@ Choose the folder where the configuration and logs will reside. (`/opt/TheHive_f
 ```bash
 DS2TH_HOMEDIR = /opt/TheHive_feeders/Digitalshadows/
 mkdir -p $DS2TH_HOMEDIR/{config,log}
+wget -O $DS2TH_HOMEDIR/config/__init__.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config/__init__.py
 wget -O $DS2TH_HOMEDIR/config/config.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config.py.template
 ```
 
