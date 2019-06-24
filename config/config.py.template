@@ -8,6 +8,8 @@ DigitalShadows = {
     'ds_secret':'',
     'verify':True,
     'fulltext':'true'
+    'log_file':'log/ds2th.log',
+    'monitoring_file':'log/ds2th.status'
 }
 
 TheHive = {
@@ -17,7 +19,8 @@ TheHive = {
   },
     'url':'',
     'key':'',
-    'template':''
-
+    'templates': {
+        'default':''
+    }
 }
 
