@@ -83,7 +83,7 @@ fi
 
 
 ## Check docker is installed 
-if [ -f  $(which docker) ] 
+if [ -x  "$(command -v docker)" ] 
 then 
 	ok "docker is installed"
 else 
