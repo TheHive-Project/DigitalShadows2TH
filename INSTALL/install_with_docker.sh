@@ -1,58 +1,67 @@
 #!/bin/bash
 
-
-DS2TH_HOMEDIR=/opt/TheHive_feeders/Digitalshadows
-ACCOUNT=thehive
-
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
+
 ok() {
-  echo " ${GREEN}[+] $*${NC}" >&2
+    echo " ${GREEN}[+] $*${NC}" >&2
 }
 
 ko() {
     echo "  ${RED}[-] $*${NC}" >&2
 }
 
-DEBUG=false
 
+
+## Check env vars
+if [ ! ${FEEDERS_HOMEDIR} ] 
+then
+	FEEDERS_HOMEDIR=/opt/theHive_feeders
+fi
+
+if [ ! ${FEEDERS_SYSACCOUNT} ] 
+then
+	FEEDERS_SYSACCOUNT=thehive
+fi
+
+DS2TH_HOMEDIR=$FEEDERS_HOMEDIR/DigitalShadows2TH
 
 PROGRAM=$(cat << EOF
-
 \n
 DIGITALSHADOWS2TH INSTALLATION PROGRAM\n
 \n
 Settings:\n
+\t- Feeders root directory: $FEEDERS_HOMEDIR\n
 \t- Installation path: $DS2TH_HOMEDIR\n
-\t- System account: $ACCOUNT\n
-\t- DEBUG: $DEBUG\n
+\t- Feeder system account: $FEEDERS_SYSACCOUNT\n
 EOF
 )
 
 
-
-
-if $DEBUG; 
-then 
-  DEBUG="" 
-  WGET_OUTPUT="-v"
-else 
-  DEBUG="2>&1>/dev/null"
-  WGET_OUTPUT="-q"
-fi 
+WGET_OUTPUT="-q"
 
 
 echo $PROGRAM 
 
 ## CREATE HOMEDIR
-for path in config log ; 
-do ( mkdir -p $DS2TH_HOMEDIR/$path $DEBUG && ok "$DS2TH_HOMEDIR/$path folders created" || ( ko "Failed to created $DS2TH_HOMEDIR/$path" && exit 1 ) );
+folders='config log'
+
+for path in $folders
+do mkdir -p $DS2TH_HOMEDIR/$path
+	if [ $? -eq 0 ]
+	then 
+		ok "$DS2TH_HOMEDIR/$path folders created" 
+	else	
+		echo $path
+		ko "Failed to created $DS2TH_HOMEDIR/$path" 
+		exit 1
+	fi
 done
 
 ## Download config files
-wget -O $DS2TH_HOMEDIR/config/__init__.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config/__init__.py $WGET_OUTPUT
+wget $WGET_OUTPUT -O $DS2TH_HOMEDIR/config/__init__.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config/__init__.py 
 
 if [ $? -eq 0 ]
 then
@@ -62,7 +71,7 @@ else
 	exit 1 
 fi
 
-wget -O $DS2TH_HOMEDIR/config/config.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config/config.py.template $WGET_OUTPUT 
+wget $WGET_OUTPUT -O $DS2TH_HOMEDIR/config/config.py https://raw.githubusercontent.com/TheHive-Project/DigitalShadows2TH/master/config/config.py.template
 
 if [ $? -eq 0 ] 
 then 
@@ -84,11 +93,12 @@ fi
 
 
 ## Ensure docker can be use
-if [ $($( grep docker /etc/group  | grep $USER)) ]
+ /bin/grep docker /etc/group | grep $FEEDERS_SYSACCOUNT > /dev/null
+if [ $? -eq 0 ]
 then 
-	ok "user ${ACCOUNT} is allowed to use docker"
+	ok "user ${FEEDERS_SYSACCOUNT} is allowed to use docker"
 else 
-	ko "user ${ACCOUNT} is not allowed to use docker. Add it to docker group ( usermod -G docker ${ACCOUNT} )"
+	ko "user ${FEEDERS_SYSACCOUNT} is not allowed to use docker. Add it to docker group ( usermod -G docker ${FEEDERS_SYSACCOUNT} )"
 	exit 1
 fi 
 
@@ -103,9 +113,9 @@ FINISH=$(cat << EOF
 DIGITALSHADOWS2TH INSTALLATION IS DONE!\n
 \n
 \t- edit $DS2TH_HOMEDIR/config/config.py\n
-\t- and run the feeder using the following command line:\n
+\t- and run the feeder using the following command line:\n\n
 \t docker run --rm --net=host --mount type=bind,source=$DS2TH_HOMEDIR/config,target=/app/config --mount type=bind,source=$DS2TH_HOMEDIR/log,target=/app/log thehiveproject/ds2th <OPTIONS>
-
+\n
 EOF
 )
 
