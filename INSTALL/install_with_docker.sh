@@ -54,7 +54,6 @@ do mkdir -p $DS2TH_HOMEDIR/$path
 	then 
 		ok "$DS2TH_HOMEDIR/$path folders created" 
 	else	
-		echo $path
 		ko "Failed to created $DS2TH_HOMEDIR/$path" 
 		exit 1
 	fi
