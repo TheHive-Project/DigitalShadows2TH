@@ -6,11 +6,11 @@ NC=`tput sgr0`
 
 
 ok() {
-    echo " ${GREEN}[+] $*${NC}" >&2
+    echo -e " ${GREEN}[+] $*${NC}" >&2
 }
 
 ko() {
-    echo "  ${RED}[-] $*${NC}" >&2
+    echo -e "  ${RED}[-] $*${NC}" >&2
 }
 
 
@@ -43,7 +43,7 @@ EOF
 WGET_OUTPUT="-q"
 
 
-echo $PROGRAM 
+echo -e $PROGRAM 
 
 ## CREATE HOMEDIR
 folders='config log'
@@ -119,4 +119,4 @@ DIGITALSHADOWS2TH INSTALLATION IS DONE!\n
 EOF
 )
 
-echo $FINISH
+echo -e $FINISH
