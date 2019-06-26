@@ -4,13 +4,15 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
+SUCCESS='\u2714'
+FAIL='\u274c'
 
 ok() {
-    echo -e " ${GREEN}[+] $*${NC}" >&2
+    echo -e " ${GREEN}${SUCCESS}${NC} $*" >&2
 }
 
 ko() {
-    echo -e "  ${RED}[-] $*${NC}" >&2
+    echo -e "\n  ${RED}${FAIL} $*${NC} \n" >&2
 }
 
 
@@ -18,7 +20,7 @@ ko() {
 ## Check env vars
 if [ ! ${FEEDERS_HOMEDIR} ] 
 then
-	FEEDERS_HOMEDIR=/opt/theHive_feeders
+	FEEDERS_HOMEDIR=/opt/thehive_feeders
 fi
 
 if [ ! ${FEEDERS_SYSACCOUNT} ] 
@@ -45,16 +47,33 @@ WGET_OUTPUT="-q"
 
 echo -e $PROGRAM 
 
+
+## Check if $FEEDERS_SYSACCOUNT exists
+id -u $FEDDERS_SYSACCOUNT > /dev/null
+if [ ! $? -eq 0 ] 
+then
+	nok " User $FEEDERS_SYSACCOUNT does not exist on the system. Add it or use another account by setting the FEEDERS_SYSACCOUNT environment variable (export FEEDERS_SYSACCOUNT=<YOUR ACCOUNT>)"
+else
+	ok "User $FEEDERS_SYSACCOUNT exists"
+fi
+
+if [ ! ${FEEDERS_SYSACCOUNT} ] 
+then
+	FEEDERS_SYSACCOUNT=thehive
+fi
+
+
+
 ## CREATE HOMEDIR
 folders='config log'
 
 for path in $folders
-do mkdir -p $DS2TH_HOMEDIR/$path
+do mkdir -p $DS2TH_HOMEDIR/$path 2> /dev/null
 	if [ $? -eq 0 ]
 	then 
 		ok "$DS2TH_HOMEDIR/$path folders created" 
 	else	
-		ko "Failed to created $DS2TH_HOMEDIR/$path" 
+		ko "Failed to created $FEEDERS_HOMEDIR/$path.\nEnsure this folder has been created and the system account $FEEDERS_SYSACCOUNT has rw access rights" 
 		exit 1
 	fi
 done
@@ -64,7 +83,7 @@ wget $WGET_OUTPUT -O $DS2TH_HOMEDIR/config/__init__.py https://raw.githubusercon
 
 if [ $? -eq 0 ]
 then
-	ok "__init__.py installed "
+	ok "__init__.py downloaded and installed "
 else
 	ko "Failed to download and install __init__.py" 
 	exit 1 
@@ -74,7 +93,7 @@ wget $WGET_OUTPUT -O $DS2TH_HOMEDIR/config/config.py https://raw.githubuserconte
 
 if [ $? -eq 0 ] 
 then 
-	ok "config.py installed "
+	ok "config.py downloaded installed "
 else
        	ko "Failed to download and install config.py" 
 	exit 1 
