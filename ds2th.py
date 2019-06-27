@@ -225,7 +225,8 @@ def build_alert(incident, type, observables, thumbnail):
     :rtype: thehive4py.models Alerts
     """
 
-    template = TheHive.get('templates').get(incident.get('type'), 'default'))
+
+    template = TheHive.get('templates').get(incident.get('type'), 'default')
 
     if type in ['incident', 'intel-incident']:
         obs=build_observables(observables)
