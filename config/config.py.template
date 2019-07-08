@@ -7,7 +7,7 @@ DigitalShadows = {
     'ds_key':'',
     'ds_secret':'',
     'verify':True,
-    'fulltext':'true'
+    'fulltext':'true',
     'log_file':'log/ds2th.log',
     'monitoring_file':'log/ds2th.status'
 }
